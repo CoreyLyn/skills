@@ -1,9 +1,9 @@
 ---
-name: autopilot-ready-issues
+name: autopilot-issues
 description: Continuously drain ready-for-agent implementation issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing issue state, and continuing until no ready-for-agent issues remain. Use when the user explicitly asks Codex to run an automatic issue-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready issue work until the queue is empty.
 ---
 
-# Autopilot Ready Issues
+# Autopilot Issues
 
 ## Core Rule
 
@@ -21,9 +21,9 @@ If readiness, merge safety, or issue closure is uncertain, stop or leave that it
 
 ## Required Sub-Skill
 
-Use `$dispatch-ready-issues` as the single-round dispatcher. This skill owns the outer loop, merge gates, state refresh, and stop conditions. `$dispatch-ready-issues` owns issue readiness filtering, branch/worktree setup, subagent prompting, and subagent wait/close lifecycle.
+Use `$dispatch-issues` as the single-round dispatcher. This skill owns the outer loop, merge gates, state refresh, and stop conditions. `$dispatch-issues` owns issue readiness filtering, branch/worktree setup, subagent prompting, and subagent wait/close lifecycle.
 
-Do not bypass `$dispatch-ready-issues` unless it is unavailable; if unavailable, apply its same readiness and subagent lifecycle rules manually and report that fallback.
+Do not bypass `$dispatch-issues` unless it is unavailable; if unavailable, apply its same readiness and subagent lifecycle rules manually and report that fallback.
 
 ## Tool Requirements
 
@@ -33,7 +33,7 @@ Use the repository's configured tracker and forge tools:
 - GitLab: prefer GitLab connector tools when available; otherwise use `glab`.
 - Local markdown issues: use local files only when the repo manages issues that way.
 
-Use native Codex subagent tools through `$dispatch-ready-issues`:
+Use native Codex subagent tools through `$dispatch-issues`:
 
 | Intent | Codex tool |
 | --- | --- |
@@ -55,8 +55,8 @@ Repeat until a stop condition is reached:
    - Query open PRs/MRs created by prior loop rounds.
    - Rebuild dependency and blocker state from current labels, linked issues, project fields, milestones, and comments.
 2. If there are mergeable PRs/MRs from prior rounds, process merge gates before dispatching more work.
-3. If no mergeable PRs/MRs exist, call `$dispatch-ready-issues` for one safe batch of at most 3 issues.
-4. Wait for the dispatched subagents to complete through `$dispatch-ready-issues`.
+3. If no mergeable PRs/MRs exist, call `$dispatch-issues` for one safe batch of at most 3 issues.
+4. Wait for the dispatched subagents to complete through `$dispatch-issues`.
 5. For each returned PR/MR, evaluate merge gates.
 6. For each draft PR/MR that passes parent verification and merge gates except draft state, convert it to ready-for-review with the repository forge tool.
 7. Re-check required checks, comments, conflicts, labels, and dependencies after conversion.

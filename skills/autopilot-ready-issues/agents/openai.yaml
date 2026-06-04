@@ -1,4 +1,0 @@
-interface:
-  display_name: "Autopilot Ready Issues"
-  short_description: "Loop through ready issues with merge gates"
-  default_prompt: "Use $autopilot-ready-issues to repeatedly dispatch ready-for-agent issues, wait for draft PRs, merge safe PRs, and continue until no ready issues remain."

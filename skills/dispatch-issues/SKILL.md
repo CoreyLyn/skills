@@ -1,9 +1,9 @@
 ---
-name: dispatch-ready-issues
+name: dispatch-issues
 description: Analyze a repository's open issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation issues to subagents. Use when the user asks Codex to triage ready issue work for AFK agents, fan out implementation tasks, dispatch subagents, start independent issue branches/worktrees, or run the next safe batch of implementation work from an issue tracker.
 ---
 
-# Dispatch Ready Issues
+# Dispatch Issues
 
 ## Core Rule
 
@@ -13,7 +13,7 @@ Never dispatch issues labeled or equivalent to `needs-info`, `needs-triage`, `re
 
 This skill is an explicit request to use subagents after the readiness filter selects at least one task. Do not stop at a written dispatch plan when safe tasks were selected; actually spawn the subagents through the available multi-agent tool.
 
-This skill performs one dispatch round. It does not automatically merge PRs/MRs or continue looping through the issue queue. For an automatic loop that waits for subagent PRs/MRs, applies merge gates, merges safe work, refreshes issue state, and repeats until no ready-for-agent issues remain, use `$autopilot-ready-issues`.
+This skill performs one dispatch round. It does not automatically merge PRs/MRs or continue looping through the issue queue. For an automatic loop that waits for subagent PRs/MRs, applies merge gates, merges safe work, refreshes issue state, and repeats until no ready-for-agent issues remain, use `$autopilot-issues`.
 
 ## Tool Mapping
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dispatch Issues"
+  short_description: "Dispatch only safe, unblocked issue work"
+  default_prompt: "Use $dispatch-issues to analyze this repository and dispatch only currently unblocked implementation issues to subagents."

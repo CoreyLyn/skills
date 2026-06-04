@@ -13,6 +13,8 @@ Never dispatch issues labeled or equivalent to `needs-info`, `needs-triage`, `re
 
 This skill is an explicit request to use subagents after the readiness filter selects at least one task. Do not stop at a written dispatch plan when safe tasks were selected; actually spawn the subagents through the available multi-agent tool.
 
+This skill performs one dispatch round. It does not automatically merge PRs/MRs or continue looping through the issue queue. For an automatic loop that waits for subagent PRs/MRs, applies merge gates, merges safe work, refreshes issue state, and repeats until no ready-for-agent issues remain, use `$autopilot-ready-issues`.
+
 ## Tool Mapping
 
 Use the platform's native subagent tools. Do not emulate subagents with prose or ordinary follow-up threads.

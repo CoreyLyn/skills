@@ -32,6 +32,8 @@ For Codex:
 
 If `spawn_agent`, `wait_agent`, or `close_agent` are not visible, search for `subagent spawn agents multi-agent` with tool discovery first. If the tools remain unavailable after discovery, stop and report that subagent dispatch is blocked; do not silently switch to manual implementation.
 
+Use the repository forge or tracker tool to move PRs/MRs from draft to ready-for-review after parent verification. For GitHub, prefer the GitHub connector or `gh pr ready`. For GitLab, prefer the GitLab connector or the configured `glab` equivalent. If the ready/undraft operation is unavailable, leave the PR/MR as draft and record that blocker.
+
 ## Repository Intake
 
 1. Inspect the current repository state before choosing tasks:
@@ -97,8 +99,10 @@ Use this exact lifecycle after selecting issues:
 6. If a subagent returns `NEEDS_CONTEXT`, answer with `send_input` and wait again.
 7. If a subagent returns `DONE_WITH_CONCERNS`, inspect the concerns before accepting completion.
 8. If a subagent returns `BLOCKED`, do not retry blindly; decide whether more context, a smaller task, or human input is required.
-9. When a subagent reaches a final status and no more follow-up is needed, call `close_agent` to free the slot.
-10. Produce the dispatch ledger and next-round gate conditions.
+9. If a subagent returns `DONE`, verify the reported branch, commit, PR/MR URL, changed-file scope, and test results.
+10. If parent verification passes and the PR/MR is still draft, convert it to ready-for-review with the repository forge tool. Do not convert PRs/MRs with concerns, failed verification, missing tests, unclear scope, or unresolved blockers.
+11. When a subagent reaches a final status and no more follow-up is needed, call `close_agent` to free the slot.
+12. Produce the dispatch ledger and next-round gate conditions.
 
 Wait for dispatched agents before claiming the round has completed. It is acceptable to do non-overlapping parent work while agents run, but do not lose the agent ids or skip result collection.
 
@@ -118,7 +122,7 @@ Prefer using $tdd for development: write or update focused failing tests first, 
 
 Before changing files, inspect the working tree and relevant code. Preserve unrelated user changes. If the issue is blocked, ambiguous, or unsafe, stop and report why instead of guessing.
 
-After implementation, run the appropriate tests for the touched area. Create a local commit, push the branch, and open a draft PR/MR. The PR/MR description must include:
+After implementation, run the appropriate tests for the touched area. Create a local commit, push the branch, and open a draft PR/MR. Leave the PR/MR as draft; the parent agent will convert it to ready-for-review only after parent verification passes. The PR/MR description must include:
 - Linked issue
 - Change summary
 - Verification results
@@ -138,12 +142,26 @@ Add repository-specific commands, tracker links, and acceptance criteria after t
 
 Handle subagent statuses mechanically:
 
-- `DONE`: verify the reported branch, commit, PR/MR URL, and tests; then close the agent.
+- `DONE`: verify the reported branch, commit, PR/MR URL, changed-file scope, and tests. If verification passes and the PR/MR is draft, convert it to ready-for-review; then close the agent.
 - `DONE_WITH_CONCERNS`: read the concerns. If they affect acceptance criteria, tests, push, or PR/MR creation, send a targeted follow-up or mark the issue as not fully dispatched-complete.
 - `NEEDS_CONTEXT`: provide only the missing context or stop for human input if the context cannot be discovered safely.
 - `BLOCKED`: record the blocker and do not dispatch another issue that depends on it.
 
 Never treat a subagent success report as proof by itself. The parent must inspect the final summary, changed-file scope, and verification result before reporting the round outcome.
+
+## Draft PR/MR Readiness
+
+Draft PRs/MRs are the safe handoff state from subagents. The parent agent owns the transition to ready-for-review.
+
+Convert a draft PR/MR to ready-for-review only when:
+
+- The subagent status is `DONE`.
+- The parent verified the PR/MR URL, branch, commit, changed-file scope, and tests.
+- The diff stays within the assigned issue's acceptance criteria.
+- The PR/MR description includes the linked issue, change summary, and verification results.
+- There are no unresolved concerns, failed checks, merge conflicts, or new blocker labels/comments.
+
+If any condition fails, leave the PR/MR as draft and record the reason.
 
 ## Parent Agent Responsibilities
 
@@ -151,7 +169,7 @@ After dispatching:
 
 - Track which issue, branch, worktree, and subagent correspond to each task.
 - Summarize why each dispatched issue was ready.
-- Summarize each subagent's final status, commit, PR/MR URL, and verification result.
+- Summarize each subagent's final status, commit, PR/MR URL, draft/ready state, and verification result.
 - Summarize every issue considered but not dispatched, grouped by reason such as blocked dependency, needs info, human decision required, foundational issue not finished, unclear acceptance criteria, worktree conflict, or concurrency limit.
 - State the conditions for the next dispatch round, including which PRs/MRs must merge, which blocker must resolve, or what human input is needed.
 

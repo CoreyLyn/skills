@@ -13,8 +13,9 @@ Run a controlled loop, not a one-shot dispatch. Each loop iteration must:
 2. Dispatch only currently safe ready-for-agent issues.
 3. Wait for subagents to finish and open draft PRs/MRs.
 4. Verify strict merge gates.
-5. Merge only PRs/MRs that pass every gate.
-6. Refresh state before dispatching the next round.
+5. Convert verified draft PRs/MRs to ready-for-review.
+6. Merge only ready PRs/MRs that pass every gate.
+7. Refresh state before dispatching the next round.
 
 If readiness, merge safety, or issue closure is uncertain, stop or leave that item unmerged. Do not guess.
 
@@ -57,9 +58,11 @@ Repeat until a stop condition is reached:
 3. If no mergeable PRs/MRs exist, call `$dispatch-ready-issues` for one safe batch of at most 3 issues.
 4. Wait for the dispatched subagents to complete through `$dispatch-ready-issues`.
 5. For each returned PR/MR, evaluate merge gates.
-6. Merge PRs/MRs that pass every gate.
-7. Confirm each merged PR/MR closed or updated its linked issue. If the issue remains open, refresh and determine whether more ready work remains.
-8. Re-query all issue and dependency state before the next dispatch round.
+6. For each draft PR/MR that passes parent verification and merge gates except draft state, convert it to ready-for-review with the repository forge tool.
+7. Re-check required checks, comments, conflicts, labels, and dependencies after conversion.
+8. Merge PRs/MRs that are ready-for-review and pass every gate.
+9. Confirm each merged PR/MR closed or updated its linked issue. If the issue remains open, refresh and determine whether more ready work remains.
+10. Re-query all issue and dependency state before the next dispatch round.
 
 Never dispatch from a stale issue snapshot after a merge. Foundational or shared-contract changes must be merged and state-refreshed before dependent issues are dispatched.
 
@@ -70,6 +73,7 @@ Merge only PRs/MRs that pass all gates:
 - The PR/MR was created by a subagent in this loop or by a tracked prior round.
 - The PR/MR is linked to exactly the assigned issue unless the tracker explicitly permits multiple linked issues and all are ready.
 - The source branch and worktree match the dispatch ledger.
+- The PR/MR has been converted from draft to ready-for-review by the parent after verification.
 - The diff is limited to the assigned issue's acceptance criteria.
 - The PR/MR description includes linked issue, change summary, and verification results.
 - Required checks are successful.
@@ -80,6 +84,22 @@ Merge only PRs/MRs that pass all gates:
 - The PR/MR is not blocked by repository rules, branch protection, missing approvals, or policy.
 
 If any gate fails, do not merge. Record the reason and either send a targeted subagent follow-up, leave the PR/MR for human review, or stop the loop if the blocker affects further dispatch.
+
+## Draft to Ready
+
+Subagents create draft PRs/MRs as the handoff state. The parent agent owns the transition to ready-for-review.
+
+Convert a draft PR/MR to ready-for-review only when:
+
+- The subagent returned `DONE`.
+- Parent verification confirms branch, commit, changed-file scope, PR/MR description, and test results.
+- The issue still has no new blocker, dependency change, label change, or needs-info comment.
+- The diff is limited to acceptance criteria.
+- No repository policy requires human review before undrafting.
+
+After conversion, refresh PR/MR state before merging. Some checks, automations, or review rules may run only after a PR/MR becomes ready-for-review.
+
+If conversion fails or the forge tool cannot undraft the PR/MR, leave it as draft, record the blocker, and do not merge it.
 
 ## Auto-Merge Boundaries
 
@@ -120,6 +140,7 @@ Maintain a ledger during the loop:
 - Subagent final status.
 - Commit SHA.
 - PR/MR URL.
+- Draft/ready state.
 - Verification commands and results.
 - Merge gate result.
 - Merge SHA or reason not merged.
@@ -135,6 +156,7 @@ When the loop stops, report:
 - Issues dispatched but not merged, with gate failure or blocker.
 - Ready-for-agent issues not dispatched, grouped by reason.
 - PRs/MRs still open.
+- Draft PRs/MRs that could not be converted to ready-for-review.
 - Verification summary.
 - Exact stop condition.
 - Conditions required for the next loop.

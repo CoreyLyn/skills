@@ -1,6 +1,6 @@
 ---
 name: dispatch-issues
-description: Analyze a repository's open issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation issues to subagents. Use when the user asks Codex to triage ready issue work for AFK agents, fan out implementation tasks, dispatch subagents, start independent issue branches/worktrees, or run the next safe batch of implementation work from an issue tracker.
+description: Analyze a repository's open issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation issues to subagents. Use when the user asks Codex or Claude Code to triage ready issue work for AFK agents, fan out implementation tasks, dispatch subagents, start independent issue branches/worktrees, or run the next safe batch of implementation work from an issue tracker.
 ---
 
 # Dispatch Issues
@@ -11,7 +11,7 @@ Dispatch only work that is clearly ready, unblocked, implementation-oriented, an
 
 Never dispatch issues labeled or equivalent to `needs-info`, `needs-triage`, `ready-for-human`, `wontfix`, blocked, duplicate, closed, stale, design-only, discussion-only, or any task with unfinished dependencies.
 
-This skill is an explicit request to use subagents after the readiness filter selects at least one task. Do not stop at a written dispatch plan when safe tasks were selected; actually spawn the subagents through the available multi-agent tool.
+This skill is an explicit request to use subagents after the readiness filter selects at least one task. Do not stop at a written dispatch plan when safe tasks were selected; actually dispatch the subagents through the available subagent tool.
 
 This skill performs one dispatch round. It does not automatically merge PRs/MRs or continue looping through the issue queue. For an automatic loop that waits for subagent PRs/MRs, applies merge gates, merges safe work, refreshes issue state, and repeats until no ready-for-agent issues remain, use `$autopilot-issues`.
 
@@ -19,18 +19,20 @@ This skill performs one dispatch round. It does not automatically merge PRs/MRs 
 
 Use the platform's native subagent tools. Do not emulate subagents with prose or ordinary follow-up threads.
 
-For Codex:
+This skill is written in platform-neutral terms. Map each intent to your platform's native subagent tools:
 
-| Intent | Codex tool |
-| --- | --- |
-| Dispatch one subagent | `spawn_agent` |
-| Dispatch independent subagents in parallel | Multiple `spawn_agent` calls before waiting |
-| Wait for subagent result | `wait_agent` |
-| Send clarification or fix request | `send_input` |
-| Release completed subagent slot | `close_agent` |
-| Track parent checklist | `update_plan` |
+| Intent | Claude Code | Codex |
+| --- | --- | --- |
+| Dispatch one subagent | `Task` / `Agent` | `spawn_agent` |
+| Dispatch independent subagents in parallel | Multiple `Task` calls in one message | Multiple `spawn_agent` calls before waiting |
+| Wait for subagent result | Returns automatically; for background agents, resume on the completion notification | `wait_agent` |
+| Send clarification or fix request | `SendMessage` to the background/named agent | `send_input` |
+| Release completed subagent slot | Automatic on completion (no-op) | `close_agent` |
+| Track parent checklist | `TodoWrite` (or `TaskCreate` + `TaskUpdate`) | `update_plan` |
 
-If `spawn_agent`, `wait_agent`, or `close_agent` are not visible, search for `subagent spawn agents multi-agent` with tool discovery first. If the tools remain unavailable after discovery, stop and report that subagent dispatch is blocked; do not silently switch to manual implementation.
+Pick the column for the platform you are running on. The rest of this skill describes subagent actions in platform-neutral terms (dispatch, wait for result, send a follow-up, release the slot); map each to your platform's tool using the table above. Codex-only parameters are called out inline where they matter.
+
+If your platform's subagent-dispatch tool is not visible, search for `subagent spawn agents multi-agent task` with tool discovery first. If no native subagent-dispatch tool exists on this platform even after discovery, stop and report that subagent dispatch is blocked; do not silently switch to manual implementation.
 
 Use the repository forge or tracker tool to move PRs/MRs from draft to ready-for-review after parent verification. For GitHub, prefer the GitHub connector or `gh pr ready`. For GitLab, prefer the GitLab connector or the configured `glab` equivalent. If the ready/undraft operation is unavailable, leave the PR/MR as draft and record that blocker.
 
@@ -70,10 +72,10 @@ Dispatch at most 3 subagents at the same time.
 
 Before creating branches or prompts, load the subagent tool surface:
 
-1. Search for `subagent spawn agents multi-agent` with tool discovery when `spawn_agent` is not already visible.
-2. Use the discovered `spawn_agent` tool for dispatch.
-3. Prefer `agent_type: "worker"` for implementation issues.
-4. Do not use separate Codex threads as a substitute for subagents unless the user explicitly asks for separate threads instead of subagents.
+1. Confirm your platform's dispatch tool (see Tool Mapping) is available; if it is not visible, search for `subagent spawn agents multi-agent task` with tool discovery first.
+2. Use that dispatch tool for dispatch.
+3. Dispatch implementation issues as a worker/implementation subagent (on Codex, `agent_type: "worker"`).
+4. Do not use separate chat threads or sessions as a substitute for subagents unless the user explicitly asks for separate threads instead of subagents.
 
 For each selected issue:
 
@@ -83,7 +85,7 @@ For each selected issue:
 4. Confirm the worktree starts from the correct base branch.
 5. Start exactly one subagent for exactly one issue.
 6. Instruct the subagent to prefer `$tdd` for development when the issue is implementation work with testable behavior.
-7. When `spawn_agent` supports structured items, include the `$tdd` skill item or its local `SKILL.md` path in the subagent input when available.
+7. When the dispatch tool supports structured items, include the `$tdd` skill item or its local `SKILL.md` path in the subagent input when available.
 
 Do not simulate dispatch by doing the implementation in the parent agent unless the user explicitly asks for that fallback.
 
@@ -93,15 +95,15 @@ Use this exact lifecycle after selecting issues:
 
 1. Create or verify the dedicated branch and worktree for each selected issue.
 2. Build a complete subagent prompt for each issue.
-3. Call `spawn_agent` once per issue, with `agent_type: "worker"` for implementation tasks.
+3. Dispatch one subagent per issue (one dispatch call each), as a worker/implementation subagent for implementation tasks (on Codex, `agent_type: "worker"`).
 4. Record each returned agent id, issue id, branch, and worktree path.
-5. After all selected subagents are spawned, call `wait_agent` for the active agent ids.
-6. If a subagent returns `NEEDS_CONTEXT`, answer with `send_input` and wait again.
+5. After all selected subagents are dispatched, wait for the active subagents' results.
+6. If a subagent returns `NEEDS_CONTEXT`, answer with a clarification/fix request and wait again.
 7. If a subagent returns `DONE_WITH_CONCERNS`, inspect the concerns before accepting completion.
 8. If a subagent returns `BLOCKED`, do not retry blindly; decide whether more context, a smaller task, or human input is required.
 9. If a subagent returns `DONE`, verify the reported branch, commit, PR/MR URL, changed-file scope, and test results.
 10. If parent verification passes and the PR/MR is still draft, convert it to ready-for-review with the repository forge tool. Do not convert PRs/MRs with concerns, failed verification, missing tests, unclear scope, or unresolved blockers.
-11. When a subagent reaches a final status and no more follow-up is needed, call `close_agent` to free the slot.
+11. When a subagent reaches a final status and no more follow-up is needed, release its slot.
 12. Produce the dispatch ledger and next-round gate conditions.
 
 Wait for dispatched agents before claiming the round has completed. It is acceptable to do non-overlapping parent work while agents run, but do not lose the agent ids or skip result collection.
@@ -142,7 +144,7 @@ Add repository-specific commands, tracker links, and acceptance criteria after t
 
 Handle subagent statuses mechanically:
 
-- `DONE`: verify the reported branch, commit, PR/MR URL, changed-file scope, and tests. If verification passes and the PR/MR is draft, convert it to ready-for-review; then close the agent.
+- `DONE`: verify the reported branch, commit, PR/MR URL, changed-file scope, and tests. If verification passes and the PR/MR is draft, convert it to ready-for-review; then release the subagent slot.
 - `DONE_WITH_CONCERNS`: read the concerns. If they affect acceptance criteria, tests, push, or PR/MR creation, send a targeted follow-up or mark the issue as not fully dispatched-complete.
 - `NEEDS_CONTEXT`: provide only the missing context or stop for human input if the context cannot be discovered safely.
 - `BLOCKED`: record the blocker and do not dispatch another issue that depends on it.

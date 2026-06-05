@@ -1,6 +1,6 @@
 ---
 name: autopilot-issues
-description: Continuously drain ready-for-agent implementation issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing issue state, and continuing until no ready-for-agent issues remain. Use when the user explicitly asks Codex to run an automatic issue-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready issue work until the queue is empty.
+description: Continuously drain ready-for-agent implementation issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing issue state, and continuing until no ready-for-agent issues remain. Use when the user explicitly asks Codex or Claude Code to run an automatic issue-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready issue work until the queue is empty.
 ---
 
 # Autopilot Issues
@@ -33,15 +33,15 @@ Use the repository's configured tracker and forge tools:
 - GitLab: prefer GitLab connector tools when available; otherwise use `glab`.
 - Local markdown issues: use local files only when the repo manages issues that way.
 
-Use native Codex subagent tools through `$dispatch-issues`:
+Use the platform's native subagent tools through `$dispatch-issues` (see its Tool Mapping for full Claude Code / Codex equivalents):
 
-| Intent | Codex tool |
-| --- | --- |
-| Dispatch subagent | `spawn_agent` |
-| Wait for subagent | `wait_agent` |
-| Follow up with subagent | `send_input` |
-| Close completed subagent | `close_agent` |
-| Track loop status | `update_plan` |
+| Intent | Claude Code | Codex |
+| --- | --- | --- |
+| Dispatch subagent | `Task` / `Agent` | `spawn_agent` |
+| Wait for subagent | Returns automatically; for background agents, resume on the completion notification | `wait_agent` |
+| Follow up with subagent | `SendMessage` to the background/named agent | `send_input` |
+| Close completed subagent | Automatic on completion (no-op) | `close_agent` |
+| Track loop status | `TodoWrite` (or `TaskCreate` + `TaskUpdate`) | `update_plan` |
 
 ## Loop Algorithm
 

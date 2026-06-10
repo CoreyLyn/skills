@@ -25,6 +25,8 @@ Use `$dispatch-issues` as the single-round dispatcher. This skill owns the outer
 
 Do not bypass `$dispatch-issues` unless it is unavailable; if unavailable, apply its same readiness and subagent lifecycle rules manually and report that fallback.
 
+All issue worktrees must be located at `<project-root>/.worktrees/<branch-name>`, where `<project-root>` is resolved with `git rev-parse --show-toplevel` and `<branch-name>` is safe to use as one Windows directory name without path separators. Do not accept or create worktrees outside this directory layout.
+
 ## Tool Requirements
 
 Use the repository's configured tracker and forge tools:
@@ -51,6 +53,7 @@ Repeat until a stop condition is reached:
    - Run `git status --short --branch`.
    - Fetch remotes.
    - Identify the base branch.
+   - Resolve the project root and verify tracked issue worktrees use `<project-root>/.worktrees/<branch-name>`.
    - Query open issues labeled or equivalent to `ready-for-agent`.
    - Query open PRs/MRs created by prior loop rounds.
    - Rebuild dependency and blocker state from current labels, linked issues, project fields, milestones, and comments.

@@ -80,12 +80,23 @@ Before creating branches or prompts, load the subagent tool surface:
 For each selected issue:
 
 1. Create one branch and one Git worktree dedicated to that issue.
-2. Use a branch name that includes the issue identifier and a short slug.
-3. Keep existing user changes out of the new worktree unless they are intentionally part of the issue.
-4. Confirm the worktree starts from the correct base branch.
-5. Start exactly one subagent for exactly one issue.
-6. Instruct the subagent to prefer `$tdd` for development when the issue is implementation work with testable behavior.
-7. When the dispatch tool supports structured items, include the `$tdd` skill item or its local `SKILL.md` path in the subagent input when available.
+2. Resolve the current project's root with `git rev-parse --show-toplevel`.
+3. Use a branch name that includes the issue identifier and a short slug, and is safe to use as one Windows directory name without path separators.
+4. Create the worktree only at `<project-root>/.worktrees/<branch-name>`. Do not create issue worktrees as siblings of the project, in a global worktree directory, or anywhere else.
+5. Create `<project-root>/.worktrees` when it does not exist, and fail rather than reuse a non-empty path that belongs to another branch or task.
+6. Keep existing user changes out of the new worktree unless they are intentionally part of the issue.
+7. Confirm the worktree starts from the correct base branch.
+8. Start exactly one subagent for exactly one issue.
+9. Instruct the subagent to prefer `$tdd` for development when the issue is implementation work with testable behavior.
+10. When the dispatch tool supports structured items, include the `$tdd` skill item or its local `SKILL.md` path in the subagent input when available.
+
+For example, branch `issue-42-add-json-report` must use:
+
+```text
+<project-root>/.worktrees/issue-42-add-json-report
+```
+
+Treat the resolved project root as authoritative even when the skill is invoked from a subdirectory.
 
 Do not simulate dispatch by doing the implementation in the parent agent unless the user explicitly asks for that fallback.
 
@@ -93,7 +104,7 @@ Do not simulate dispatch by doing the implementation in the parent agent unless 
 
 Use this exact lifecycle after selecting issues:
 
-1. Create or verify the dedicated branch and worktree for each selected issue.
+1. Create or verify the dedicated branch and worktree for each selected issue at `<project-root>/.worktrees/<branch-name>`.
 2. Build a complete subagent prompt for each issue.
 3. Dispatch one subagent per issue (one dispatch call each), as a worker/implementation subagent for implementation tasks (on Codex, `agent_type: "worker"`).
 4. Record each returned agent id, issue id, branch, and worktree path.

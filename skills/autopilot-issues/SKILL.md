@@ -23,6 +23,8 @@ If readiness, merge safety, or issue closure is uncertain, stop or leave that it
 
 Use `$dispatch-issues` as the single-round dispatcher. This skill owns the outer loop, merge gates, state refresh, and stop conditions. `$dispatch-issues` owns issue readiness filtering, branch/worktree setup, subagent prompting, and subagent wait/close lifecycle.
 
+Implementation subagents should receive `$implement` through `$dispatch-issues`; this skill should not independently prescribe a lower-level development workflow.
+
 Do not bypass `$dispatch-issues` unless it is unavailable; if unavailable, apply its same readiness and subagent lifecycle rules manually and report that fallback.
 
 All issue worktrees must be located at `<project-root>/.worktrees/<branch-name>`, where `<project-root>` is resolved with `git rev-parse --show-toplevel` and `<branch-name>` is safe to use as one Windows directory name without path separators. Do not accept or create worktrees outside this directory layout.

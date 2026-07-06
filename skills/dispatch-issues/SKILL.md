@@ -87,8 +87,8 @@ For each selected issue:
 6. Keep existing user changes out of the new worktree unless they are intentionally part of the issue.
 7. Confirm the worktree starts from the correct base branch.
 8. Start exactly one subagent for exactly one issue.
-9. Instruct the subagent to prefer `$tdd` for development when the issue is implementation work with testable behavior.
-10. When the dispatch tool supports structured items, include the `$tdd` skill item or its local `SKILL.md` path in the subagent input when available.
+9. Instruct the subagent to use `$implement` for development when the issue is implementation work.
+10. When the dispatch tool supports structured items, include the `$implement` skill item or its local `SKILL.md` path in the subagent input when available.
 
 For example, branch `issue-42-add-json-report` must use:
 
@@ -131,7 +131,7 @@ Branch: <branch>
 
 First read the repository guide, README, relevant docs, and the assigned issue. Implement only this issue's stated acceptance criteria. Do not casually implement follow-up tasks, adjacent issues, or speculative improvements.
 
-Prefer using $tdd for development: write or update focused failing tests first, make them pass with the smallest implementation, then refactor only within the assigned issue scope. If TDD is not practical for this issue, state why before implementing.
+Use $implement for development: follow the issue/PRD implementation workflow, keep scope limited to the assigned issue, add or update focused tests when behavior is testable, run relevant verification, review the work, and commit on this branch.
 
 Before changing files, inspect the working tree and relevant code. Preserve unrelated user changes. If the issue is blocked, ambiguous, or unsafe, stop and report why instead of guessing.
 

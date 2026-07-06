@@ -5,165 +5,90 @@ description: Continuously drain ready-for-agent implementation issues by repeate
 
 # Autopilot Issues
 
-## Core Rule
+## Purpose
 
-Run a controlled loop, not a one-shot dispatch. Each loop iteration must:
+Run a controlled issue-draining loop:
 
-1. Refresh repository, issue, dependency, label, and PR/MR state.
-2. Dispatch only currently safe ready-for-agent issues.
-3. Wait for subagents to finish and open draft PRs/MRs.
-4. Verify strict merge gates.
-5. Convert verified draft PRs/MRs to ready-for-review.
-6. Merge only ready PRs/MRs that pass every gate.
-7. Refresh state before dispatching the next round.
+1. Refresh repo, issue, dependency, label, and PR/MR state.
+2. Merge any tracked PR/MR that passes all gates.
+3. Use `$dispatch-issues` for one safe batch when no mergeable tracked PR/MR is waiting.
+4. Wait for draft PRs/MRs, verify them, convert safe drafts to ready-for-review, then refresh state.
+5. Repeat until a stop condition is reached.
 
-If readiness, merge safety, or issue closure is uncertain, stop or leave that item unmerged. Do not guess.
+If readiness, merge safety, or issue closure is uncertain, stop or leave that item unmerged.
 
-## Required Sub-Skill
+## Delegation
 
-Use `$dispatch-issues` as the single-round dispatcher. This skill owns the outer loop, merge gates, state refresh, and stop conditions. `$dispatch-issues` owns issue readiness filtering, branch/worktree setup, subagent prompting, and subagent wait/close lifecycle.
+Use `$dispatch-issues` as the single-round dispatcher. It owns readiness filtering, branch/worktree setup, `$implement` subagent prompting, and subagent wait/follow-up lifecycle.
 
-Implementation subagents should receive `$implement` through `$dispatch-issues`; this skill should not independently prescribe a lower-level development workflow.
+Do not bypass `$dispatch-issues` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
 
-Do not bypass `$dispatch-issues` unless it is unavailable; if unavailable, apply its same readiness and subagent lifecycle rules manually and report that fallback.
+All issue worktrees must use `<project-root>/.worktrees/<branch-name>`, with `<project-root>` from `git rev-parse --show-toplevel`. Do not accept or create issue worktrees elsewhere.
 
-All issue worktrees must be located at `<project-root>/.worktrees/<branch-name>`, where `<project-root>` is resolved with `git rev-parse --show-toplevel` and `<branch-name>` is safe to use as one Windows directory name without path separators. Do not accept or create worktrees outside this directory layout.
+Use the repo's configured tracker and forge tools. Prefer GitHub/GitLab connectors; otherwise use `gh` or `glab`.
 
-## Tool Requirements
+## Loop
 
-Use the repository's configured tracker and forge tools:
+Each round:
 
-- GitHub: prefer GitHub connector tools when available; otherwise use `gh`.
-- GitLab: prefer GitLab connector tools when available; otherwise use `glab`.
-- Local markdown issues: use local files only when the repo manages issues that way.
+1. Run `git status --short --branch`, fetch remotes, identify base branch, and resolve repo root.
+2. Query open `ready-for-agent` issues, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
+3. Rebuild dependency/blocker state from current data.
+4. Process tracked PRs/MRs before dispatching more work.
+5. If no tracked PR/MR is mergeable, call `$dispatch-issues` for at most 3 currently safe issues.
+6. Wait for dispatch results through `$dispatch-issues`.
+7. Evaluate gates for every returned PR/MR.
+8. Convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
+9. Confirm linked issues closed or updated.
+10. Refresh issue/dependency state before the next round.
 
-Use the platform's native subagent tools through `$dispatch-issues` (see its Tool Mapping for full Claude Code / Codex equivalents):
-
-| Intent | Claude Code | Codex |
-| --- | --- | --- |
-| Dispatch subagent | `Task` / `Agent` | `spawn_agent` |
-| Wait for subagent | Returns automatically; for background agents, resume on the completion notification | `wait_agent` |
-| Follow up with subagent | `SendMessage` to the background/named agent | `send_input` |
-| Close completed subagent | Automatic on completion (no-op) | `close_agent` |
-| Track loop status | `TodoWrite` (or `TaskCreate` + `TaskUpdate`) | `update_plan` |
-
-## Loop Algorithm
-
-Repeat until a stop condition is reached:
-
-1. Refresh base state:
-   - Run `git status --short --branch`.
-   - Fetch remotes.
-   - Identify the base branch.
-   - Resolve the project root and verify tracked issue worktrees use `<project-root>/.worktrees/<branch-name>`.
-   - Query open issues labeled or equivalent to `ready-for-agent`.
-   - Query open PRs/MRs created by prior loop rounds.
-   - Rebuild dependency and blocker state from current labels, linked issues, project fields, milestones, and comments.
-2. If there are mergeable PRs/MRs from prior rounds, process merge gates before dispatching more work.
-3. If no mergeable PRs/MRs exist, call `$dispatch-issues` for one safe batch of at most 3 issues.
-4. Wait for the dispatched subagents to complete through `$dispatch-issues`.
-5. For each returned PR/MR, evaluate merge gates.
-6. For each draft PR/MR that passes parent verification and merge gates except draft state, convert it to ready-for-review with the repository forge tool.
-7. Re-check required checks, comments, conflicts, labels, and dependencies after conversion.
-8. Merge PRs/MRs that are ready-for-review and pass every gate.
-9. Confirm each merged PR/MR closed or updated its linked issue. If the issue remains open, refresh and determine whether more ready work remains.
-10. Re-query all issue and dependency state before the next dispatch round.
-
-Never dispatch from a stale issue snapshot after a merge. Foundational or shared-contract changes must be merged and state-refreshed before dependent issues are dispatched.
+Never dispatch from a stale issue snapshot after a merge. Foundational or shared-contract work must merge and refresh before dependent issues are dispatched.
 
 ## Merge Gates
 
-Merge only PRs/MRs that pass all gates:
+Merge only PRs/MRs that pass every gate:
 
-- The PR/MR was created by a subagent in this loop or by a tracked prior round.
-- The PR/MR is linked to exactly the assigned issue unless the tracker explicitly permits multiple linked issues and all are ready.
-- The source branch and worktree match the dispatch ledger.
-- The PR/MR has been converted from draft to ready-for-review by the parent after verification.
-- The diff is limited to the assigned issue's acceptance criteria.
-- The PR/MR description includes linked issue, change summary, and verification results.
-- Required checks are successful.
-- The subagent ran appropriate tests and reported results.
-- The parent agent has inspected the subagent final status and changed-file scope.
-- There are no unresolved review comments, failed checks, merge conflicts, or requested human decisions.
-- The issue has no new blocker, needs-info comment, changed label, or dependency update since dispatch.
-- The PR/MR is not blocked by repository rules, branch protection, missing approvals, or policy.
+- Created by this loop or a tracked prior round.
+- Linked to the assigned issue.
+- Source branch and worktree match the dispatch ledger.
+- Parent verified subagent `DONE` status, branch, commit, diff scope, PR/MR description, and tests.
+- Converted from draft to ready-for-review by the parent after verification.
+- Diff stays within acceptance criteria.
+- Required checks pass.
+- No unresolved review comments, merge conflicts, failed checks, requested human decisions, new blocker labels/comments, or dependency changes since dispatch.
+- No repo rule, branch protection, missing approval, or policy blocks the merge.
 
-If any gate fails, do not merge. Record the reason and either send a targeted subagent follow-up, leave the PR/MR for human review, or stop the loop if the blocker affects further dispatch.
+Use the repo's normal merge method. Do not invent squash/rebase/merge policy.
 
-## Draft to Ready
-
-Subagents create draft PRs/MRs as the handoff state. The parent agent owns the transition to ready-for-review.
-
-Convert a draft PR/MR to ready-for-review only when:
-
-- The subagent returned `DONE`.
-- Parent verification confirms branch, commit, changed-file scope, PR/MR description, and test results.
-- The issue still has no new blocker, dependency change, label change, or needs-info comment.
-- The diff is limited to acceptance criteria.
-- No repository policy requires human review before undrafting.
-
-After conversion, refresh PR/MR state before merging. Some checks, automations, or review rules may run only after a PR/MR becomes ready-for-review.
-
-If conversion fails or the forge tool cannot undraft the PR/MR, leave it as draft, record the blocker, and do not merge it.
-
-## Auto-Merge Boundaries
-
-Automatic merge is allowed only for PRs/MRs that pass every merge gate. Do not auto-merge:
-
-- PRs/MRs not created by this loop or a tracked prior round.
-- PRs/MRs with human-authored changes mixed into the branch.
-- PRs/MRs touching production secrets, deployment controls, migrations, destructive data changes, payments, authentication policy, access control policy, or legal/compliance text unless the issue explicitly authorized this and all required reviews passed.
-- PRs/MRs that broaden scope beyond acceptance criteria.
-- PRs/MRs where the issue, labels, dependencies, or base branch changed after dispatch.
-
-Use the repository's normal merge method. Prefer squash/rebase/merge according to repo policy, branch protection, or documented conventions; do not invent a merge style.
+Do not auto-merge PRs/MRs with human-authored changes mixed in, broadened scope, production secrets, deployment controls, destructive migrations/data changes, payments, auth/access policy, or legal/compliance text unless explicitly authorized and all required reviews passed.
 
 ## Stop Conditions
 
-Stop the loop and report when any condition occurs:
+Stop and report when:
 
-- No open ready-for-agent issues remain.
-- A foundational issue or shared contract issue is blocked or waiting on review.
+- No open ready-for-agent implementation issues remain.
 - No currently ready issue can be safely dispatched.
+- A foundational/shared-contract issue is blocked or waiting on review.
 - A merge gate fails in a way that blocks dependent work.
 - Required forge, tracker, git, or subagent tools are unavailable.
-- Tests or checks fail and a targeted follow-up cannot safely resolve them.
-- The repository enters a dirty or conflicting state that the loop did not create.
-- The user, repository policy, branch protection, or review requirement requires human input.
+- Tests/checks fail and targeted follow-up cannot safely resolve them.
+- The repo enters a dirty or conflicting state the loop did not create.
+- User, repo policy, branch protection, or review requirements need human input.
 
-Do not continue looping around a blocker by dispatching dependent or adjacent work.
+Do not loop around blockers by dispatching dependent or adjacent work.
 
-## Dispatch Ledger
+## Ledger And Report
 
-Maintain a ledger during the loop:
+Track and report:
 
 - Round number.
-- Issue id and title.
-- Reason it was ready.
-- Branch and worktree.
-- Subagent id.
-- Subagent final status.
-- Commit SHA.
-- PR/MR URL.
-- Draft/ready state.
-- Verification commands and results.
-- Merge gate result.
-- Merge SHA or reason not merged.
+- Issue id/title and readiness reason.
+- Branch, worktree, subagent id, final status.
+- Commit SHA, PR/MR URL, draft/ready state.
+- Verification commands/results.
+- Merge gate result, merge SHA, or reason not merged.
 - Linked issue closure status.
-
-Use the ledger for the final summary and for deciding whether a PR/MR belongs to the loop.
-
-## Final Report
-
-When the loop stops, report:
-
-- Issues dispatched and merged.
-- Issues dispatched but not merged, with gate failure or blocker.
 - Ready-for-agent issues not dispatched, grouped by reason.
-- PRs/MRs still open.
-- Draft PRs/MRs that could not be converted to ready-for-review.
-- Verification summary.
-- Exact stop condition.
-- Conditions required for the next loop.
+- Exact stop condition and conditions for the next loop.
 
-Keep the report concise but complete enough that a human can audit what was merged and why.
+Keep the report concise but auditable.

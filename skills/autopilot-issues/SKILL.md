@@ -7,27 +7,18 @@ description: Continuously drain ready-for-agent implementation issues by repeate
 
 ## Purpose
 
-Run a controlled issue-draining loop:
-
-1. Refresh repo, issue, dependency, label, and PR/MR state.
-2. Merge any tracked PR/MR that passes all gates.
-3. Use `$dispatch-issues` for one safe batch when no mergeable tracked PR/MR is waiting.
-4. Wait for draft PRs/MRs, verify them, convert safe drafts to ready-for-review, then refresh state.
-5. Repeat until a stop condition is reached.
-
-If readiness, merge safety, or issue closure is uncertain, stop or leave that item unmerged.
+Run a controlled issue-draining loop: refresh state, merge only tracked PRs/MRs that pass every gate, dispatch one safe batch when nothing is mergeable, and stop when the queue or safety conditions require it.
 
 ## Delegation
 
-Use `$dispatch-issues` as the single-round dispatcher. It owns per-issue dispatchability/readiness filtering, branch/worktree setup, `$implement` subagent prompting, and subagent wait/follow-up lifecycle.
-
-This skill owns only loop state: refreshing tracker/forge data, detecting blockers since dispatch, deciding when to call `$dispatch-issues`, converting verified drafts to ready-for-review, applying merge gates, and stopping.
+- `$dispatch-issues` owns per-issue readiness, branch/worktree setup, `$implement` subagent prompting, and subagent lifecycle.
+- `$autopilot-issues` owns loop state: refreshing tracker/forge data, detecting new blockers, deciding when to dispatch, converting verified drafts to ready-for-review, applying merge gates, and stopping.
 
 Do not bypass `$dispatch-issues` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
 
 Treat `$dispatch-issues`'s `<project-root>/.worktrees/<branch-name>` layout as a hard invariant when verifying ledgers and merge gates. Do not accept or create issue worktrees elsewhere.
 
-Use the repo's configured tracker and forge tools. Prefer GitHub/GitLab connectors; otherwise use `gh` or `glab`.
+Use the repo's configured tracker and forge tools.
 
 ## Loop
 
@@ -38,11 +29,9 @@ Each round:
 3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-issue dispatchability to `$dispatch-issues`.
 4. Process tracked PRs/MRs before dispatching more work.
 5. If no tracked PR/MR is mergeable, call `$dispatch-issues` for at most 3 currently safe issues.
-6. Wait for dispatch results through `$dispatch-issues`.
-7. Evaluate gates for every returned PR/MR.
-8. Convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
-9. Confirm linked issues closed or updated.
-10. Refresh issue/dependency state before the next round.
+6. Wait for dispatch results, evaluate every returned PR/MR, convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
+7. Confirm linked issues closed or updated.
+8. Refresh issue/dependency state before the next round.
 
 Never dispatch from a stale issue snapshot after a merge. Foundational or shared-contract work must merge and refresh before dependent issues are dispatched.
 
@@ -64,9 +53,9 @@ Use the repo's normal merge method. Do not invent squash/rebase/merge policy.
 
 Do not auto-merge PRs/MRs with human-authored changes mixed in, broadened scope, production secrets, deployment controls, destructive migrations/data changes, payments, auth/access policy, or legal/compliance text unless explicitly authorized and all required reviews passed.
 
-## Stop Conditions
+## Stop And Report
 
-Stop and report when:
+Stop when:
 
 - No open ready-for-agent implementation issues remain.
 - No currently ready issue can be safely dispatched.
@@ -78,8 +67,6 @@ Stop and report when:
 - User, repo policy, branch protection, or review requirements need human input.
 
 Do not loop around blockers by dispatching dependent or adjacent work.
-
-## Ledger And Report
 
 Track and report:
 

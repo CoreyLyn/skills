@@ -13,23 +13,13 @@ This skill does not merge PRs/MRs or loop through the queue. For repeated dispat
 
 ## Tooling
 
-Use native subagent tools. Do not emulate subagents with prose or ordinary follow-up threads.
-
-| Intent | Claude Code | Codex |
-| --- | --- | --- |
-| Dispatch | `Task` / `Agent` | `spawn_agent` |
-| Wait | automatic return / completion notification | `wait_agent` |
-| Follow up | `SendMessage` | `send_input` |
-| Release slot | automatic/no-op | `close_agent` |
-| Track parent work | `TodoWrite` / `TaskUpdate` | `update_plan` |
+Use native subagent tools; do not emulate subagents with prose or ordinary follow-up threads. In Codex use `spawn_agent`, `wait_agent`, `send_input`, `close_agent`, and `update_plan`; in Claude Code use `Task`/`Agent`, `SendMessage`, and normal task tracking.
 
 If the dispatch tool is not visible, use tool discovery for `subagent spawn agents multi-agent task`. If no native dispatch tool exists, stop and report the blocker.
 
 Use the repo's forge/tracker tooling for PR/MR state changes.
 
-## Intake
-
-Before selecting issues:
+## Select Issues
 
 1. Run `git status --short --branch`.
 2. Identify base branch, current branch, remotes, tracker, and forge.
@@ -37,8 +27,6 @@ Before selecting issues:
 4. Query open issues from the configured tracker.
 5. Read labels, milestones, acceptance criteria, linked issues, dependency notes, and recent comments.
 6. Treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
-
-## Readiness
 
 Dispatch an issue only when all are true:
 
@@ -65,7 +53,7 @@ For each selected issue:
 8. Instruct the subagent to use `$implement`; include the `$implement` item or local `SKILL.md` path when structured tool input supports it.
 9. Record agent id, issue id, branch, worktree, and expected PR/MR.
 
-Never create issue worktrees outside `<project-root>/.worktrees/`. Never do the implementation in the parent agent unless the user explicitly asks for that fallback.
+Never create issue worktrees outside `<project-root>/.worktrees/`, reuse another task's worktree, or implement in the parent agent unless the user explicitly asks for that fallback.
 
 ## Subagent Prompt
 
@@ -85,16 +73,12 @@ Before changing files, inspect the working tree and relevant code. Preserve unre
 
 After $implement completes and the work is committed, push the branch and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will verify and record the handoff.
 
-Report exactly one status:
-- DONE: implementation, verification, commit, push, and draft PR/MR are complete.
-- DONE_WITH_CONCERNS: work is complete, but correctness, scope, test, push, or PR/MR concerns remain.
-- NEEDS_CONTEXT: specific missing information is needed.
-- BLOCKED: the issue cannot be completed safely.
+Report exactly one status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED.
 
 Always include changed files, verification commands/results, branch, commit SHA if created, PR/MR URL if opened, and remaining risks.
 ```
 
-## Parent Verification
+## Verify And Report
 
 Wait for all dispatched agents before claiming the round is complete. Handle statuses mechanically:
 
@@ -104,8 +88,6 @@ Wait for all dispatched agents before claiming the round is complete. Handle sta
 - `BLOCKED`: record the blocker and do not dispatch dependent work.
 
 Do not mark drafts as verified when they have failed verification, missing tests, broad scope, unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments.
-
-## Final Ledger
 
 Report:
 

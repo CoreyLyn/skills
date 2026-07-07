@@ -25,7 +25,7 @@ Use native subagent tools. Do not emulate subagents with prose or ordinary follo
 
 If the dispatch tool is not visible, use tool discovery for `subagent spawn agents multi-agent task`. If no native dispatch tool exists, stop and report the blocker.
 
-Use the repo's forge/tracker tooling for PR/MR state changes. Prefer GitHub/GitLab connectors; otherwise use `gh` or `glab`.
+Use the repo's forge/tracker tooling for PR/MR state changes.
 
 ## Intake
 
@@ -83,7 +83,7 @@ Use $implement for development: keep scope limited, add or update focused tests 
 
 Before changing files, inspect the working tree and relevant code. Preserve unrelated user changes. If the issue is blocked, ambiguous, or unsafe, stop and report why instead of guessing.
 
-After implementation, run appropriate tests, create a local commit, push the branch, and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will mark it ready only after verification.
+After implementation, run appropriate tests, create a local commit, push the branch, and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will verify and record the handoff.
 
 Report exactly one status:
 - DONE: implementation, verification, commit, push, and draft PR/MR are complete.
@@ -98,19 +98,19 @@ Always include changed files, verification commands/results, branch, commit SHA 
 
 Wait for all dispatched agents before claiming the round is complete. Handle statuses mechanically:
 
-- `DONE`: verify branch, commit, PR/MR URL, changed-file scope, tests, and PR/MR description. If clean and still draft, convert to ready-for-review with the forge tool.
+- `DONE`: verify branch, commit, draft PR/MR URL, changed-file scope, tests, and PR/MR description. Record whether the draft is verified; do not convert it to ready-for-review.
 - `DONE_WITH_CONCERNS`: inspect concerns; send a targeted follow-up only if the issue can still be completed safely.
 - `NEEDS_CONTEXT`: provide only the missing context, or stop for human input if it cannot be discovered safely.
 - `BLOCKED`: record the blocker and do not dispatch dependent work.
 
-Do not convert PRs/MRs with failed verification, missing tests, broad scope, unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments.
+Do not mark drafts as verified when they have failed verification, missing tests, broad scope, unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments.
 
 ## Final Ledger
 
 Report:
 
 - Dispatched issues, readiness reason, branch, worktree, and subagent id.
-- Final status, commit, PR/MR URL, draft/ready state, verification results, and remaining risks.
+- Final status, commit, draft PR/MR URL, verified/unverified draft state, verification results, and remaining risks.
 - Issues considered but not dispatched, grouped by reason.
 - Conditions for the next round.
 

@@ -19,11 +19,13 @@ If readiness, merge safety, or issue closure is uncertain, stop or leave that it
 
 ## Delegation
 
-Use `$dispatch-issues` as the single-round dispatcher. It owns readiness filtering, branch/worktree setup, `$implement` subagent prompting, and subagent wait/follow-up lifecycle.
+Use `$dispatch-issues` as the single-round dispatcher. It owns per-issue dispatchability/readiness filtering, branch/worktree setup, `$implement` subagent prompting, and subagent wait/follow-up lifecycle.
+
+This skill owns only loop state: refreshing tracker/forge data, detecting blockers since dispatch, deciding when to call `$dispatch-issues`, converting verified drafts to ready-for-review, applying merge gates, and stopping.
 
 Do not bypass `$dispatch-issues` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
 
-All issue worktrees must use `<project-root>/.worktrees/<branch-name>`, with `<project-root>` from `git rev-parse --show-toplevel`. Do not accept or create issue worktrees elsewhere.
+Treat `$dispatch-issues`'s `<project-root>/.worktrees/<branch-name>` layout as a hard invariant when verifying ledgers and merge gates. Do not accept or create issue worktrees elsewhere.
 
 Use the repo's configured tracker and forge tools. Prefer GitHub/GitLab connectors; otherwise use `gh` or `glab`.
 
@@ -31,9 +33,9 @@ Use the repo's configured tracker and forge tools. Prefer GitHub/GitLab connecto
 
 Each round:
 
-1. Run `git status --short --branch`, fetch remotes, identify base branch, and resolve repo root.
-2. Query open `ready-for-agent` issues, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
-3. Rebuild dependency/blocker state from current data.
+1. Run `git status --short --branch`, fetch remotes, identify base branch, and resolve repo root for ledger verification.
+2. Query tracker/forge state: open `ready-for-agent` issues at a high level, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
+3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-issue dispatchability to `$dispatch-issues`.
 4. Process tracked PRs/MRs before dispatching more work.
 5. If no tracked PR/MR is mergeable, call `$dispatch-issues` for at most 3 currently safe issues.
 6. Wait for dispatch results through `$dispatch-issues`.

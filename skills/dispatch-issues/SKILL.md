@@ -79,11 +79,11 @@ Branch: <branch>
 
 Read the repository guide, README, relevant docs, and the assigned issue first. Implement only this issue's stated acceptance criteria. Do not implement adjacent issues or speculative improvements.
 
-Use $implement for development: keep scope limited, add or update focused tests when behavior is testable, run relevant verification, review the work, and commit on this branch.
+Use $implement for development; it owns implementation, focused tests where practical, verification, review, and commit on this branch.
 
 Before changing files, inspect the working tree and relevant code. Preserve unrelated user changes. If the issue is blocked, ambiguous, or unsafe, stop and report why instead of guessing.
 
-After implementation, run appropriate tests, create a local commit, push the branch, and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will verify and record the handoff.
+After $implement completes and the work is committed, push the branch and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will verify and record the handoff.
 
 Report exactly one status:
 - DONE: implementation, verification, commit, push, and draft PR/MR are complete.

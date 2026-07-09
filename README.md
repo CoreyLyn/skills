@@ -2,7 +2,7 @@
 
 这是一个面向 Codex / Claude Code 的 issue-agent 技能集合，用来把已准备好的实现问题安全分发给子代理，并在需要时持续推进到验证、合并和队列清空。
 
-本仓库依赖并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流，尤其是假设项目里已采用 `ready-for-agent`、`$implement`、每个 issue/ticket 一个分支/工作树、draft PR/MR handoff、父代理验证和 merge gates 等约束。这里的两个 skill 不是替代基础开发技能，而是把 Matt Pocock skills 的实现流程编排成可重复的 ticket 分发和自动处理流程。
+本仓库依赖并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流，尤其是假设项目里已采用 `ready-for-agent`、`$implement`、每个 issue/ticket 一个分支/工作树、PR/MR 或 local-only handoff、父代理验证和 merge gates 等约束。这里的两个 skill 不是替代基础开发技能，而是把 Matt Pocock skills 的实现流程编排成可重复的 ticket 分发和自动处理流程。
 
 ## 安装
 
@@ -29,24 +29,24 @@ npx skills add coreylyn/skills
 **适用场景：**
 - 扇出一批当前可做的实现 issue
 - 为每个 issue 创建独立分支和 `.worktrees/<branch-name>` 工作树
-- 让子代理按 `$implement` 完成实现、测试、提交和 draft PR/MR
+- 让子代理按 `$implement` 完成实现、测试、提交和 PR/MR 或 local-only handoff
 - 父代理只做 handoff 验证，不合并、不循环
 
 **核心特性：**
 - 只分发 ready、未阻塞、面向实现的问题
 - 最多一次并发 3 个子代理
 - 每个 issue 一个分支、一个工作树、一个子代理
-- 固定 draft PR/MR handoff 合约
-- 输出可审计 ledger：issue、分支、工作树、agent id、提交、PR/MR、验证结果和风险
+- 固定 handoff 合约：GitHub PR、GitLab MR，或本地 ticket handoff
+- 输出可审计 ledger：issue、分支、工作树、agent id、提交、handoff artifact、验证结果和风险
 
 ### `/autopilot-tickets`
 
-运行受控的 ticket-draining loop：刷新 tracker/forge 状态，先处理已跟踪 PR/MR 的验证和合并门控；没有可合并 PR/MR 时，再调用 `$dispatch-tickets` 分发下一批安全 ticket。
+运行受控的 ticket-draining loop：刷新 tracker/forge 状态，先处理已跟踪 handoff 的验证和合并门控；没有可合并或可验证 handoff 时，再调用 `$dispatch-tickets` 分发下一批安全 ticket。
 
 **适用场景：**
 - 自动循环处理 `ready-for-agent` 队列
-- 把已验证的 draft PR/MR 转为 ready-for-review
-- 只合并通过全部 gate 的 agent-created PR/MR
+- 把已验证的 draft PR/MR 转为 ready-for-review；local-only 则标记为 ready-for-human-merge
+- 只合并通过全部 gate 的 agent-created PR/MR；local-only 默认不自动合并
 - 每次合并后刷新 issue 依赖，再决定下一轮
 
 **核心特性：**
@@ -64,13 +64,13 @@ npx skills add coreylyn/skills
    ```
    $dispatch-tickets
    ```
-   分析并分发当前就绪的问题，最多 3 个。结束时留下 draft PR/MR 和父代理验证记录。
+   分析并分发当前就绪的问题，最多 3 个。结束时留下 PR/MR 或 local-only handoff 和父代理验证记录。
 
 2. **自动驾驶模式：**
    ```
    $autopilot-tickets
    ```
-   循环处理 ready 队列：先合并已安全通过 gate 的 PR/MR，再分发下一批；直到队列清空或遇到停止条件。
+   循环处理 ready 队列：先处理已安全通过 gate 的 handoff，再分发下一批；直到队列清空或遇到停止条件。
 
 ### 工作树管理
 
@@ -95,16 +95,16 @@ npx skills add coreylyn/skills
 
 ## 合并门控
 
-`autopilot-tickets` 只合并通过所有 gate 的 PR/MR：
+`autopilot-tickets` 只合并通过所有 gate 的 PR/MR；local-only handoff 默认只验证到 `ready-for-human-merge`：
 
-- PR/MR 由当前 loop 或已跟踪的 prior round 创建。
-- PR/MR 正确关联到 assigned issue。
+- PR/MR 或 local-only handoff 由当前 loop 或已跟踪的 prior round 创建。
+- PR/MR 正确关联到 assigned issue，或 local-only handoff 正确关联到本地 ticket。
 - source branch 和 worktree 匹配 dispatch ledger。
-- 父代理已验证 `DONE` 状态、提交、diff 范围、PR/MR 描述和测试结果。
-- draft PR/MR 由父代理验证后再转为 ready-for-review。
+- 父代理已验证 `DONE` 状态、提交、diff 范围、handoff artifact 和测试结果。
+- draft PR/MR 由父代理验证后再转为 ready-for-review；local-only handoff 由父代理验证后标记为 ready-for-human-merge。
 - diff 不超出验收标准。
-- 必需检查通过。
-- 没有未解决 review comments、merge conflicts、failed checks、新 blocker、人工决策或依赖变化。
+- 必需检查通过；local-only 至少通过父代理可运行的本地验证。
+- 没有未解决 review comments、merge conflicts、failed checks、新 blocker、人工决策或依赖变化；local-only 没有未解决 handoff concerns。
 - 不混入 human-authored changes，不触碰未经授权的 secrets、生产控制、破坏性迁移、支付、权限策略或合规文本。
 
 ## 何时停止

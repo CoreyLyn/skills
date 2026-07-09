@@ -1,15 +1,15 @@
 ---
-name: dispatch-issues
-description: Analyze a repository's open issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation issues to subagents. Use when the user asks Codex or Claude Code to triage ready issue work for AFK agents, fan out implementation tasks, dispatch subagents, start independent issue branches/worktrees, or run the next safe batch of implementation work from an issue tracker.
+name: dispatch-tickets
+description: Analyze a repository's open tickets or issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation tickets to subagents. Use when the user asks Codex or Claude Code to triage ready ticket work for AFK agents, fan out implementation tasks, dispatch subagents, start independent ticket branches/worktrees, or run the next safe batch of implementation work from a tracker.
 ---
 
-# Dispatch Issues
+# Dispatch Tickets
 
 ## Purpose
 
 Run one safe dispatch round. Select only ready, unblocked, implementation-oriented issues, start one subagent per issue, wait for results, verify the handoff, and report the ledger.
 
-This skill does not merge PRs/MRs or loop through the queue. For repeated dispatch, merge gates, and queue draining, use `$autopilot-issues`.
+This skill does not merge PRs/MRs or loop through the queue. For repeated dispatch, merge gates, and queue draining, use `$autopilot-tickets`.
 
 ## Tooling
 

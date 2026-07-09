@@ -1,9 +1,9 @@
 ---
-name: autopilot-issues
-description: Continuously drain ready-for-agent implementation issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing issue state, and continuing until no ready-for-agent issues remain. Use when the user explicitly asks Codex or Claude Code to run an automatic issue-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready issue work until the queue is empty.
+name: autopilot-tickets
+description: Continuously drain ready-for-agent implementation tickets or issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing ticket state, and continuing until no ready-for-agent tickets remain. Use when the user explicitly asks Codex or Claude Code to run an automatic ticket-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready ticket work until the queue is empty.
 ---
 
-# Autopilot Issues
+# Autopilot Tickets
 
 ## Purpose
 
@@ -11,12 +11,12 @@ Run a controlled issue-draining loop: refresh state, merge only tracked PRs/MRs 
 
 ## Delegation
 
-- `$dispatch-issues` owns per-issue readiness, branch/worktree setup, `$implement` subagent prompting, and subagent lifecycle.
-- `$autopilot-issues` owns loop state: refreshing tracker/forge data, detecting new blockers, deciding when to dispatch, converting verified drafts to ready-for-review, applying merge gates, and stopping.
+- `$dispatch-tickets` owns per-ticket readiness, branch/worktree setup, `$implement` subagent prompting, and subagent lifecycle.
+- `$autopilot-tickets` owns loop state: refreshing tracker/forge data, detecting new blockers, deciding when to dispatch, converting verified drafts to ready-for-review, applying merge gates, and stopping.
 
-Do not bypass `$dispatch-issues` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
+Do not bypass `$dispatch-tickets` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
 
-Treat `$dispatch-issues`'s `<project-root>/.worktrees/<branch-name>` layout as a hard invariant when verifying ledgers and merge gates. Do not accept or create issue worktrees elsewhere.
+Treat `$dispatch-tickets`'s `<project-root>/.worktrees/<branch-name>` layout as a hard invariant when verifying ledgers and merge gates. Do not accept or create ticket worktrees elsewhere.
 
 Use the repo's configured tracker and forge tools.
 
@@ -26,9 +26,9 @@ Each round:
 
 1. Run `git status --short --branch`, fetch remotes, identify base branch, and resolve repo root for ledger verification.
 2. Query tracker/forge state: open `ready-for-agent` issues at a high level, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
-3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-issue dispatchability to `$dispatch-issues`.
+3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-ticket dispatchability to `$dispatch-tickets`.
 4. Process tracked PRs/MRs before dispatching more work.
-5. If no tracked PR/MR is mergeable, call `$dispatch-issues` for at most 3 currently safe issues.
+5. If no tracked PR/MR is mergeable, call `$dispatch-tickets` for at most 3 currently safe tickets.
 6. Wait for dispatch results, evaluate every returned PR/MR, convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
 7. Confirm linked issues closed or updated.
 8. Refresh issue/dependency state before the next round.

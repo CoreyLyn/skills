@@ -13,7 +13,7 @@ This skill does not merge PRs/MRs or loop through the queue. For repeated dispat
 
 ## Tooling
 
-Use native subagent tools; do not emulate subagents with prose or ordinary follow-up threads. In Codex use `spawn_agent`, `wait_agent`, `send_input`, `close_agent`, and `update_plan`; in Claude Code use `Task`/`Agent`, `SendMessage`, and normal task tracking.
+Use native subagent tools; do not emulate subagents with prose or ordinary follow-up threads. In Codex use `spawn_agent`, `wait_agent`, `send_input`, `close_agent`, and `update_plan`; in Claude Code / Grok Build use `Task`/`Agent`, `SendMessage`, and normal task tracking.
 
 If the dispatch tool is not visible, use tool discovery for `subagent spawn agents multi-agent task`. If no native dispatch tool exists, stop and report the blocker.
 

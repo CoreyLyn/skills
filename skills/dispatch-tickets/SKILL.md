@@ -37,7 +37,7 @@ Dispatch an issue only when all are true:
 - Repo docs are sufficient for an AFK subagent.
 - Work does not require secrets, privileged production access, destructive data changes, or unresolved policy choices.
 
-If one unfinished foundational/schema/API/architecture issue blocks others, dispatch only that issue. Dispatch at most 3 subagents at once.
+If one unfinished foundational/schema/API/architecture issue blocks others, dispatch only that issue.
 
 ## Dispatch Procedure
 

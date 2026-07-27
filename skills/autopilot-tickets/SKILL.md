@@ -28,7 +28,7 @@ Each round:
 2. Query tracker/forge state: open `ready-for-agent` issues at a high level, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
 3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-ticket dispatchability to `$dispatch-tickets`.
 4. Process tracked PRs/MRs before dispatching more work.
-5. If no tracked PR/MR is mergeable, call `$dispatch-tickets` for at most 3 currently safe tickets.
+5. If no tracked PR/MR is mergeable, call $dispatch-tickets for all currently safe tickets..
 6. Wait for dispatch results, evaluate every returned PR/MR, convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
 7. Confirm linked issues closed or updated.
 8. Refresh issue/dependency state before the next round.

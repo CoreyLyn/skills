@@ -5,95 +5,62 @@ description: Analyze a repository's open tickets or issues, dependencies, labels
 
 # Dispatch Tickets
 
-## Purpose
+## Contract
 
-Run one safe dispatch round. Select only ready, unblocked, implementation-oriented issues, start one subagent per issue, wait for results, verify the handoff, and report the ledger.
+Run one safe round: classify every candidate, dispatch every safe implementation ticket, collect all results, verify handoffs, and report a ledger. Do not merge PRs/MRs, move drafts to ready, or loop; use the `autopilot-tickets` skill for those responsibilities.
 
-This skill does not merge PRs/MRs or loop through the queue. For repeated dispatch, merge gates, and queue draining, use `$autopilot-tickets`.
-
-## Tooling
-
-Use native subagent tools; do not emulate subagents with prose or ordinary follow-up threads. In Codex use `spawn_agent`, `wait_agent`, `send_input`, `close_agent`, and `update_plan`; in Claude Code / Grok Build use `Task`/`Agent`, `SendMessage`, and normal task tracking.
-
-If the dispatch tool is not visible, use tool discovery for `subagent spawn agents multi-agent task`. If no native dispatch tool exists, stop and report the blocker.
-
-Use the repo's forge/tracker tooling for PR/MR state changes.
+Set no skill-level concurrency cap; native capacity limits simultaneous calls only.
 
 ## Select Issues
 
-1. Run `git status --short --branch`.
-2. Identify base branch, current branch, remotes, tracker, and forge.
-3. Read repo guidance such as `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, and relevant docs.
-4. Query open issues from the configured tracker.
-5. Read labels, milestones, acceptance criteria, linked issues, dependency notes, and recent comments.
-6. Treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
+Use native subagent tools; prose and ordinary threads are not dispatch. Discover hidden tools with `subagent spawn agents multi-agent task` and stop if none exists. Use the configured tracker and forge.
+
+1. Run `git status --short --branch`; resolve the repo root; identify base/current branches, remotes, tracker, and forge.
+2. Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, and relevant docs.
+3. Query every open ticket; read labels, milestones, criteria, links, dependencies, and recent comments.
+4. Classify every open implementation candidate as selected or unselected with a reason; treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
 
 Dispatch an issue only when all are true:
 
-- Open, implementation-oriented, and has concrete acceptance criteria or an unambiguous outcome.
+- Open implementation work with concrete acceptance criteria or an unambiguous outcome.
 - Not blocked, duplicate, stale, closed, design-only, discussion-only, `needs-info`, `needs-triage`, `ready-for-human`, or `wontfix`.
-- No unresolved product/design decision, missing context, conflicting comments, or unfinished dependency.
-- Work can be isolated to one branch and one worktree.
-- Repo docs are sufficient for an AFK subagent.
-- Work does not require secrets, privileged production access, destructive data changes, or unresolved policy choices.
+- No unresolved product/design decision, context gap, conflicting comments, or unfinished dependency.
+- Isolatable to one branch/worktree.
+- Repo docs suffice for AFK execution.
+- Requires no secrets, privileged production access, destructive data changes, or unresolved policy choices.
 
-If one unfinished foundational/schema/API/architecture issue blocks others, dispatch only that issue.
+When unfinished foundational/schema/API/architecture work blocks others, dispatch only it.
 
-## Dispatch Procedure
+## Dispatch
 
 For each selected issue:
 
-1. Resolve repo root with `git rev-parse --show-toplevel`.
-2. Create one branch and one worktree at `<project-root>/.worktrees/<branch-name>`.
-3. Make the branch name include the issue id and short slug, with no path separators and safe as one Windows directory name.
-4. Create `<project-root>/.worktrees` if needed; fail rather than reuse a non-empty path owned by another task.
-5. Keep unrelated user changes out of the worktree.
-6. Confirm the worktree starts from the correct base branch.
-7. Dispatch exactly one worker/implementation subagent for exactly one issue.
-8. Instruct the subagent to use `$implement`; include the `$implement` item or local `SKILL.md` path when structured tool input supports it.
-9. Record agent id, issue id, branch, worktree, and expected PR/MR.
+1. Resolve `<project-root>` with `git rev-parse --show-toplevel`; choose an issue-id/slug branch with no path separators and a Windows-safe name.
+2. Create its worktree only at `<project-root>/.worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
+3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
+4. Dispatch one worker per issue with the `implement` skill (skill item or local path when supported); record agent id, issue id, branch, worktree, and expected PR/MR.
 
-Never create issue worktrees outside `<project-root>/.worktrees/`, reuse another task's worktree, or implement in the parent agent unless the user explicitly asks for that fallback.
+Parent implementation requires an explicit user fallback request.
 
-## Subagent Prompt
+## Worker Contract
 
-Give each subagent this fixed contract plus repo-specific commands, issue links, and acceptance criteria:
+Add repo commands, issue links, and acceptance criteria to this fixed contract:
 
 ```text
 You are assigned exactly one issue: <issue id and title>.
-
-Repository worktree: <absolute path>
-Branch: <branch>
-
-Read the repository guide, README, relevant docs, and the assigned issue first. Implement only this issue's stated acceptance criteria. Do not implement adjacent issues or speculative improvements.
-
-Use $implement for development; it owns implementation, focused tests where practical, verification, review, and commit on this branch.
-
-Before changing files, inspect the working tree and relevant code. Preserve unrelated user changes. If the issue is blocked, ambiguous, or unsafe, stop and report why instead of guessing.
-
-After $implement completes and the work is committed, push the branch and open a draft PR/MR. The PR/MR description must include the linked issue, change summary, and verification results. Leave it draft; the parent will verify and record the handoff.
-
-Report exactly one status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED.
-
-Always include changed files, verification commands/results, branch, commit SHA if created, PR/MR URL if opened, and remaining risks.
+Worktree: <absolute path>; branch: <branch>.
+Read the guidance and issue; inspect the tree and code. Change only its acceptance scope and preserve unrelated work. Report NEEDS_CONTEXT or BLOCKED instead of guessing when ambiguous, blocked, or unsafe.
+Use the implement skill for implementation, focused tests where practical, verification, review, and commit.
+After the implement skill completes and the work is committed, push the branch and open a draft PR/MR with linked issue, change summary, and verification results. Keep it draft for parent verification.
+Report exactly one status: DONE (complete), DONE_WITH_CONCERNS (complete with risks), NEEDS_CONTEXT (specific information required), or BLOCKED (cannot complete safely).
+Include changed files, verification commands/results, branch, commit SHA if created, draft PR/MR URL if opened, and remaining risks.
 ```
 
 ## Verify And Report
 
-Wait for all dispatched agents before claiming the round is complete. Handle statuses mechanically:
+Complete the round only after collecting every agent result and recording parent verification.
 
-- `DONE`: verify branch, commit, draft PR/MR URL, changed-file scope, tests, and PR/MR description. Record whether the draft is verified; do not convert it to ready-for-review.
-- `DONE_WITH_CONCERNS`: inspect concerns; send a targeted follow-up only if the issue can still be completed safely.
-- `NEEDS_CONTEXT`: provide only the missing context, or stop for human input if it cannot be discovered safely.
-- `BLOCKED`: record the blocker and do not dispatch dependent work.
+Handle statuses mechanically: `DONE`—verify branch, commit, draft URL, scope, tests, and description without moving it to ready; `DONE_WITH_CONCERNS`—inspect concerns and send a targeted follow-up only if the issue can still be completed safely; `NEEDS_CONTEXT`—supply only discoverable missing context or seek human input; `BLOCKED`—record it and withhold dependents.
+Verify a draft only when tests and verification pass, scope and required fields match, and no unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments remain.
 
-Do not mark drafts as verified when they have failed verification, missing tests, broad scope, unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments.
-
-Report:
-
-- Dispatched issues, readiness reason, branch, worktree, and subagent id.
-- Final status, commit, draft PR/MR URL, verified/unverified draft state, verification results, and remaining risks.
-- Issues considered but not dispatched, grouped by reason.
-- Conditions for the next round.
-
-The round is complete only after subagent results are collected and parent verification is recorded.
+Ledger: each selected issue's id/title, readiness reason, branch/worktree/agent, status, commit, draft URL and verified/unverified state, verification, and risks; unselected candidates grouped by reason; exact next-round conditions.

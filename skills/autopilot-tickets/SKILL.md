@@ -5,79 +5,54 @@ description: Continuously drain ready-for-agent implementation tickets or issues
 
 # Autopilot Tickets
 
-## Purpose
+## Ownership
 
-Run a controlled issue-draining loop: refresh state, merge only tracked PRs/MRs that pass every gate, dispatch one safe batch when nothing is mergeable, and stop when the queue or safety conditions require it.
+- `dispatch-tickets` owns per-ticket readiness, branch/worktree setup, `implement` subagent prompting, and subagent lifecycle.
+- `autopilot-tickets` owns fresh-state looping, blocker detection, draft promotion, merge gates, and stopping.
 
-## Delegation
-
-- `$dispatch-tickets` owns per-ticket readiness, branch/worktree setup, `$implement` subagent prompting, and subagent lifecycle.
-- `$autopilot-tickets` owns loop state: refreshing tracker/forge data, detecting new blockers, deciding when to dispatch, converting verified drafts to ready-for-review, applying merge gates, and stopping.
-
-Do not bypass `$dispatch-tickets` unless unavailable. If unavailable, apply the same readiness and lifecycle rules manually and report the fallback.
-
-Treat `$dispatch-tickets`'s `<project-root>/.worktrees/<branch-name>` layout as a hard invariant when verifying ledgers and merge gates. Do not accept or create ticket worktrees elsewhere.
-
-Use the repo's configured tracker and forge tools.
+Use configured tracker/forge tools. Delegate to the `dispatch-tickets` skill; if unavailable, manually apply its readiness/lifecycle rules and report the fallback.
+Only accept or create ticket worktrees that match the ledger path `<project-root>/.worktrees/<branch-name>`.
 
 ## Loop
 
-Each round:
+Repeat from fresh state:
 
-1. Run `git status --short --branch`, fetch remotes, identify base branch, and resolve repo root for ledger verification.
-2. Query tracker/forge state: open `ready-for-agent` issues at a high level, tracked PRs/MRs from prior rounds, labels, linked issues, project fields, milestones, and recent comments.
-3. Rebuild global dependency/blocker state for stop conditions and merge gates; leave per-ticket dispatchability to `$dispatch-tickets`.
-4. Process tracked PRs/MRs before dispatching more work.
-5. If no tracked PR/MR is mergeable, call $dispatch-tickets for all currently safe tickets..
-6. Wait for dispatch results, evaluate every returned PR/MR, convert verified drafts to ready-for-review, refresh PR/MR state, then merge only if all gates still pass.
-7. Confirm linked issues closed or updated.
-8. Refresh issue/dependency state before the next round.
+1. Run `git status --short --branch`; fetch, identify the base branch, and resolve the repo root.
+2. Query open `ready-for-agent` tickets, tracked PRs/MRs, labels, links, project fields, milestones, comments, dependencies, and blockers.
+3. Rebuild global dependencies/blockers; leave per-ticket dispatchability to `dispatch-tickets`.
+4. Process tracked PRs/MRs first and merge only after every gate passes. If none is mergeable, call the `dispatch-tickets` skill for all safe tickets without a fixed skill-level concurrency limit.
+5. Wait for all dispatch results. Only the parent may promote a verified draft; refresh after promotion, then merge only if every gate still passes.
+6. After each merge, confirm the linked ticket closed or updated and refresh tracker, dependencies, and blockers before evaluating another PR/MR or dispatching more work. If nothing merges, refresh before another round.
 
-Never dispatch from a stale issue snapshot after a merge. Foundational or shared-contract work must merge and refresh before dependent issues are dispatched.
+Foundational/shared-contract work must merge and appear in the refreshed state before dispatching dependents.
 
 ## Merge Gates
 
 Merge only PRs/MRs that pass every gate:
 
-- Created by this loop or a tracked prior round.
-- Linked to the assigned issue.
-- Source branch and worktree match the dispatch ledger.
-- Parent verified subagent `DONE` status, branch, commit, diff scope, PR/MR description, and tests.
-- Converted from draft to ready-for-review by the parent after verification.
-- Diff stays within acceptance criteria.
-- Required checks pass.
-- No unresolved review comments, merge conflicts, failed checks, requested human decisions, new blocker labels/comments, or dependency changes since dispatch.
-- No repo rule, branch protection, missing approval, or policy blocks the merge.
+- Created by this loop or a tracked prior round; linked to its assigned ticket.
+- Source branch and exact worktree match the dispatch ledger.
+- Parent verified `DONE`, branch, commit, changed-file scope, PR/MR description, and tests.
+- Parent promoted the verified draft to ready-for-review; current diff remains within acceptance criteria.
+- Required checks pass; no checks are failed.
+- No unresolved review comments, merge conflicts, requested human decisions, new blocker labels/comments, or dependency changes since dispatch.
+- No repo rule, branch protection, missing approval, or policy blocks merge.
 
-Use the repo's normal merge method. Do not invent squash/rebase/merge policy.
-
-Do not auto-merge PRs/MRs with human-authored changes mixed in, broadened scope, production secrets, deployment controls, destructive migrations/data changes, payments, auth/access policy, or legal/compliance text unless explicitly authorized and all required reviews passed.
+Use the repo's normal merge method; do not invent squash/rebase/merge policy.
+Do not auto-merge broadened scope, human-authored changes, production secrets, deployment controls, destructive migrations/data changes, payments, auth/access policy, or legal/compliance text without explicit authorization and all required reviews.
 
 ## Stop And Report
 
-Stop when:
+Stop under any condition below; record the blocker rather than dispatching dependent or adjacent work:
 
-- No open ready-for-agent implementation issues remain.
-- No currently ready issue can be safely dispatched.
-- A foundational/shared-contract issue is blocked or waiting on review.
-- A merge gate fails in a way that blocks dependent work.
-- Required forge, tracker, git, or subagent tools are unavailable.
-- Tests/checks fail and targeted follow-up cannot safely resolve them.
-- The repo enters a dirty or conflicting state the loop did not create.
-- User, repo policy, branch protection, or review requirements need human input.
+- No open `ready-for-agent` implementation ticket remains, or none can be safely dispatched.
+- Foundational/shared-contract work is blocked/awaiting review, or a failed merge gate blocks dependents.
+- Forge, tracker, git, or subagent tools are unavailable, or failed tests/checks resist safe targeted follow-up.
+- The repo has dirty/conflicting state the loop did not create.
+- User input, repo policy, branch protection, or review requirements need human decision.
 
-Do not loop around blockers by dispatching dependent or adjacent work.
+Carry forward the dispatch ledger and add:
 
-Track and report:
-
-- Round number.
-- Issue id/title and readiness reason.
-- Branch, worktree, subagent id, final status.
-- Commit SHA, PR/MR URL, draft/ready state.
-- Verification commands/results.
-- Merge gate result, merge SHA, or reason not merged.
-- Linked issue closure status.
-- Ready-for-agent issues not dispatched, grouped by reason.
-- Exact stop condition and conditions for the next loop.
-
-Keep the report concise but auditable.
+- Round number and draft/ready state.
+- Current verification commands/results, gate result, merge SHA or reason not merged, and linked-ticket closure.
+- Undispatched ready tickets grouped by reason, exact stop condition, and next-loop conditions.

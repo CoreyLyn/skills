@@ -17,6 +17,9 @@ Only accept or create ticket worktrees that match the ledger path `<project-root
 
 Repeat from fresh state:
 
+Explicit invocation authorizes safe in-scope recovery and merge without repeated confirmation.
+Replace unavailable workers, send targeted follow-ups, and repair loop-created changes within the same ticket scope autonomously.
+
 1. Run `git status --short --branch`; fetch, identify the base branch, and resolve the repo root.
 2. Query open `ready-for-agent` tickets, tracked PRs/MRs, labels, links, project fields, milestones, comments, dependencies, and blockers.
 3. Rebuild global dependencies/blockers; leave per-ticket dispatchability to `dispatch-tickets`.

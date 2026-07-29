@@ -40,7 +40,8 @@ For each selected issue:
 3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
 4. Dispatch one worker per issue with the `implement` skill (skill item or local path when supported); record agent id, issue id, branch, worktree, and expected PR/MR.
 
-Parent implementation requires an explicit user fallback request.
+During autopilot, the parent may repair loop-created work within the same ticket scope when a worker or targeted follow-up fails.
+Otherwise, parent implementation requires an explicit user fallback request.
 
 ## Worker Contract
 

@@ -22,12 +22,12 @@ Replace unavailable workers, send targeted follow-ups, and repair loop-created c
 
 1. Run `git status --short --branch`; fetch, identify the base branch, and resolve the repo root.
 2. Query open `ready-for-agent` tickets, tracked PRs/MRs, labels, links, project fields, milestones, comments, dependencies, and blockers.
-3. Rebuild global dependencies/blockers; leave per-ticket dispatchability to `dispatch-tickets`.
+3. Rebuild global dependencies/blockers. Treat a parent Spec/PRD/map link as scope, not a blocker: its open state never gates a child implementation ticket. Only an unfinished implementation-level dependency, an explicit human decision, or a real merge/review/policy gate blocks dispatch; leave per-ticket dispatchability to `dispatch-tickets`.
 4. Process tracked PRs/MRs first and merge only after every gate passes. If none is mergeable, call the `dispatch-tickets` skill for all safe tickets without a fixed skill-level concurrency limit.
 5. Wait for all dispatch results. Only the parent may promote a verified draft; refresh after promotion, then merge only if every gate still passes.
 6. After each merge, confirm the linked ticket closed or updated and refresh tracker, dependencies, and blockers before evaluating another PR/MR or dispatching more work. If nothing merges, refresh before another round.
 
-Foundational/shared-contract work must merge and appear in the refreshed state before dispatching dependents.
+Foundational/shared-contract implementation work must merge and appear in the refreshed state before dispatching dependents. An open parent Spec/PRD/map does not need to close first.
 
 ## Merge Gates
 
@@ -49,7 +49,7 @@ Do not auto-merge broadened scope, human-authored changes, production secrets, d
 Stop under any condition below; record the blocker rather than dispatching dependent or adjacent work:
 
 - No open `ready-for-agent` implementation ticket remains, or none can be safely dispatched.
-- Foundational/shared-contract work is blocked/awaiting review, or a failed merge gate blocks dependents.
+- Foundational/shared-contract implementation work is blocked/awaiting review, or a failed merge gate blocks dependents.
 - Forge, tracker, git, or subagent tools are unavailable, or failed tests/checks resist safe targeted follow-up.
 - The repo has dirty/conflicting state the loop did not create.
 - User input, repo policy, branch protection, or review requirements need human decision.

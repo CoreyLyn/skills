@@ -18,7 +18,7 @@ Use native subagent tools; prose and ordinary threads are not dispatch. Discover
 1. Run `git status --short --branch`; resolve the repo root; identify base/current branches, remotes, tracker, and forge.
 2. Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, and relevant docs.
 3. Query every open ticket; read labels, milestones, criteria, links, dependencies, and recent comments.
-4. Classify every open implementation candidate as selected or unselected with a reason; treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
+4. Classify every open implementation candidate as selected or unselected with a reason. A parent Spec/PRD/map link supplies scope only: its open state is not a dependency. Treat only unfinished implementation-level dependencies and explicit decision/review/policy gates as blockers; treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
 
 Dispatch an issue only when all are true:
 
@@ -29,7 +29,7 @@ Dispatch an issue only when all are true:
 - Repo docs suffice for AFK execution.
 - Requires no secrets, privileged production access, destructive data changes, or unresolved policy choices.
 
-When unfinished foundational/schema/API/architecture work blocks others, dispatch only it.
+When unfinished foundational/schema/API/architecture implementation work blocks others, dispatch only it. Do not select a design-only parent merely because it is open.
 
 ## Dispatch
 

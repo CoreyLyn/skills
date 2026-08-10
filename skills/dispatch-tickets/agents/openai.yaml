@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dispatch Tickets"
+  short_description: "Dispatch only safe, unblocked ticket work"
+  default_prompt: "Use $dispatch-tickets to analyze this repository and dispatch only currently unblocked implementation tickets to subagents."

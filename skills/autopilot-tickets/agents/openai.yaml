@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autopilot Tickets"
+  short_description: "Loop through ready issues with merge gates"
+  default_prompt: "Use $autopilot-tickets to repeatedly dispatch ready-for-agent tickets, wait for draft PRs, merge safe PRs, and continue until no ready tickets remain."

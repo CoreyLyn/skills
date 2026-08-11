@@ -25,7 +25,7 @@ Replace unavailable workers, send targeted follow-ups, and repair loop-created c
 3. Rebuild global dependencies/blockers. Treat a parent Spec/PRD/map link as scope, not a blocker: its open state never gates a child implementation ticket. Only an unfinished implementation-level dependency, an explicit human decision, or a real merge/review/policy gate blocks dispatch; leave per-ticket dispatchability to `dispatch-tickets`.
 4. Process tracked PRs/MRs first and merge only after every gate passes. If none is mergeable, call the `dispatch-tickets` skill for all safe tickets without a fixed skill-level concurrency limit.
 5. Wait for all dispatch results. Only the parent may promote a verified draft; refresh after promotion, then merge only if every gate still passes.
-6. After each merge, confirm the linked ticket closed or updated and refresh tracker, dependencies, and blockers before evaluating another PR/MR or dispatching more work. If nothing merges, refresh before another round.
+6. After each merge, confirm the linked ticket closed or updated, then remove its exact clean ledger worktree with `git worktree remove` after worker activity ends; record failure instead of forcing removal. Refresh tracker, dependencies, and blockers before evaluating another PR/MR or dispatching more work. If nothing merges, refresh before another round.
 
 Foundational/shared-contract implementation work must merge and appear in the refreshed state before dispatching dependents. An open parent Spec/PRD/map does not need to close first.
 

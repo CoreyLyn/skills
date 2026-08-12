@@ -1,8 +1,8 @@
 # skills
 
-面向 Codex / Claude Code 的 ticket 编排技能。它们不替代实现技能，而是把已准备好的实现 ticket 组织成可审计的分发、验证和合并流程。
+面向支持 subagent 的 coding agent 的 ticket 编排技能。它们不替代实现技能，而是把已准备好的实现 ticket 组织成可审计的分发、验证和合并流程。
 
-本仓库支持并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流。它默认项目已经采用 `ready-for-agent`、`/implement`、每个 issue/ticket 一个分支和工作树、draft PR/MR handoff、父代理验证、merge gates 等约束。
+本仓库支持并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流。它默认项目已经采用 `ready-for-agent`、`/implement`、每个 issue/ticket 一个分支和工作树、draft PR/MR handoff、父代理验证、merge gates 等约束。无 multi-agent/subagent 能力时 skill 应 stop 并报告，不伪造 dispatch。
 
 ## 安装
 
@@ -44,7 +44,7 @@ npx skills add coreylyn/skills
 - 项目有可查询的 tracker，以及可创建 draft PR/MR 的 forge 流程。
 - ticket 有清晰状态、依赖和验收标准，例如 `ready-for-agent`、`needs-info` 或 `blocked`。
 - 单个实现 ticket 能隔离到独立分支和工作树。
-- agent runtime 提供原生子代理能力。
+- agent runtime 提供原生子代理能力（各 harness 工具名不同；skill 用平台中立 `Subagent` 动作描述，由模型映射到真实工具）。
 - 项目文档足够 AFK 子代理独立执行，例如 `AGENTS.md`、`CLAUDE.md`、`README.md`、`CONTEXT.md` 或相关 docs。
 - 环境已提供 `implement` Skill。
 

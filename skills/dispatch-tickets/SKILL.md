@@ -1,6 +1,6 @@
 ---
 name: dispatch-tickets
-description: Analyze a repository's open tickets or issues, dependencies, labels, documentation, and working tree state, then dispatch only currently unblocked implementation tickets to subagents. Use when the user asks Codex or Claude Code to triage ready ticket work for AFK agents, fan out implementation tasks, dispatch subagents, start independent ticket branches/worktrees, or run the next safe batch of implementation work from a tracker.
+description: Analyze open tickets/issues, dependencies, docs, and worktree state; dispatch only currently unblocked implementation tickets to subagents. Use when the user asks to triage ready ticket work for AFK agents, fan out implementation, start independent ticket branches/worktrees, or run the next safe batch from a tracker.
 ---
 
 # Dispatch Tickets
@@ -13,7 +13,7 @@ Set no skill-level concurrency cap; native capacity limits simultaneous calls on
 
 ## Select Issues
 
-Use native subagent tools; prose and ordinary threads are not dispatch. Discover hidden tools with `subagent spawn agents multi-agent task` and stop if none exists. Use the configured tracker and forge.
+Use the configured tracker and forge.
 
 1. Run `git status --short --branch`; resolve the repo root; identify base/current branches, remotes, tracker, and forge.
 2. Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, and relevant docs.
@@ -33,12 +33,30 @@ When unfinished foundational/schema/API/architecture implementation work blocks 
 
 ## Dispatch
 
+**Action:** dispatch one subagent per selected issue. Prose replies and ordinary chat threads are not dispatch.
+
+Use this platform-neutral form (map to the harness's real tool — Task/Agent, `spawn_agent`, `task`, `invoke_agent`, etc.):
+
+```text
+Subagent (general-purpose):
+  description: "Implement <issue-id>: <short title>"
+  prompt: |
+    <Worker Contract below, filled in>
+```
+
+Rules:
+
+- One subagent per issue; independent issues may be dispatched in the same turn (parallel).
+- Do not invent tool names. If the harness has no multi-agent/subagent capability, stop and report that instead of faking dispatch.
+- Prefer an explicit model only when the harness supports it; otherwise omit.
+- Record agent id (if returned), issue id, branch, worktree, and expected draft PR/MR.
+
 For each selected issue:
 
 1. Resolve `<project-root>` with `git rev-parse --show-toplevel`; choose an issue-id/slug branch with no path separators and a Windows-safe name.
 2. Create its worktree only at `<project-root>/.worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
 3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
-4. Dispatch one worker per issue with the `implement` skill (skill item or local path when supported); record agent id, issue id, branch, worktree, and expected PR/MR.
+4. Dispatch one worker per issue with the filled Worker Contract; require the worker to use the `implement` skill when available (skill item or local path when supported).
 
 During autopilot, the parent may repair loop-created work within the same ticket scope when a worker or targeted follow-up fails.
 Otherwise, parent implementation requires an explicit user fallback request.

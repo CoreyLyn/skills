@@ -1,6 +1,6 @@
 ---
 name: autopilot-tickets
-description: Continuously drain ready-for-agent implementation tickets or issues by repeatedly dispatching safe batches to subagents, waiting for draft PRs or MRs, verifying merge gates, merging only safe agent-created PRs or MRs, refreshing ticket state, and continuing until no ready-for-agent tickets remain. Use when the user explicitly asks Codex or Claude Code to run an automatic ticket-processing loop, auto-merge completed agent PRs/MRs, or keep dispatching ready ticket work until the queue is empty.
+description: Drain ready-for-agent implementation tickets by dispatching safe batches to subagents, waiting for draft PRs/MRs, verifying merge gates, merging only safe agent-created PRs/MRs, and looping until the queue is empty or blocked. Use when the user explicitly asks for an automatic ticket-processing loop, auto-merge of completed agent PRs/MRs, or continuous ready-ticket dispatch.
 ---
 
 # Autopilot Tickets
@@ -11,6 +11,7 @@ description: Continuously drain ready-for-agent implementation tickets or issues
 - `autopilot-tickets` owns fresh-state looping, blocker detection, draft promotion, merge gates, and stopping.
 
 Use configured tracker/forge tools. Delegate to the `dispatch-tickets` skill; if unavailable, manually apply its readiness/lifecycle rules and report the fallback.
+Subagent dispatch is delegated to `dispatch-tickets`. If the harness cannot dispatch subagents, stop the loop after reporting the missing capability — do not simulate workers in the parent session unless the user explicitly requests fallback inline work.
 Only accept or create ticket worktrees that match the ledger path `<project-root>/.worktrees/<branch-name>`.
 
 ## Loop

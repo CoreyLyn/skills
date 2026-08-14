@@ -47,6 +47,8 @@ Do not auto-merge broadened scope, human-authored changes, production secrets, d
 
 ## Stop And Report
 
+**Final-answer gate:** The loop is incomplete while the dispatch ledger contains any running worker or any expected draft/MR without a collected terminal status. In that state, wait for the result and resume the loop. Emit a final response only after every dispatched worker is terminal and one stop condition below is true.
+
 Stop under any condition below; record the blocker rather than dispatching dependent or adjacent work:
 
 - No open `ready-for-agent` implementation ticket remains, or none can be safely dispatched.

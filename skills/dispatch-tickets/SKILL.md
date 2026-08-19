@@ -56,7 +56,7 @@ For each selected issue:
 1. Resolve `<project-root>` with `git rev-parse --show-toplevel`; choose an issue-id/slug branch with no path separators and a Windows-safe name.
 2. Create its worktree only at `<project-root>/.worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
 3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
-4. Dispatch one worker per issue with the filled Worker Contract; require the worker to use the `implement` skill when available (skill item or local path when supported).
+4. Dispatch one worker per issue with the filled Worker Contract.
 
 During autopilot, the parent may repair loop-created work within the same ticket scope when a worker or targeted follow-up fails.
 Otherwise, parent implementation requires an explicit user fallback request.
@@ -69,8 +69,8 @@ Add repo commands, issue links, and acceptance criteria to this fixed contract:
 You are assigned exactly one issue: <issue id and title>.
 Worktree: <absolute path>; branch: <branch>.
 Read the guidance and issue; inspect the tree and code. Change only its acceptance scope and preserve unrelated work. Report NEEDS_CONTEXT or BLOCKED instead of guessing when ambiguous, blocked, or unsafe.
-Use the implement skill for implementation, focused tests where practical, verification, review, and commit.
-After the implement skill completes and the work is committed, push the branch and open a draft PR/MR with linked issue, change summary, and verification results. Keep it draft for parent verification.
+Implement the assigned issue. Use /tdd where possible, at pre-agreed seams. Run typechecking regularly, single test files regularly, and the full test suite once at the end. Once done, use /code-review to review the work. Commit to the current branch.
+After commit, push the branch and open a draft PR/MR with linked issue, change summary, and verification results. Keep it draft for parent verification.
 Report exactly one status: DONE (complete), DONE_WITH_CONCERNS (complete with risks), NEEDS_CONTEXT (specific information required), or BLOCKED (cannot complete safely).
 Include changed files, verification commands/results, branch, commit SHA if created, draft PR/MR URL if opened, and remaining risks.
 ```

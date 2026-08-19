@@ -7,7 +7,7 @@ description: Drain ready-for-agent implementation tickets by dispatching safe ba
 
 ## Ownership
 
-- `dispatch-tickets` owns per-ticket readiness, branch/worktree setup, `implement` subagent prompting, and subagent lifecycle.
+- `dispatch-tickets` owns per-ticket readiness, branch/worktree setup, worker prompting, and subagent lifecycle.
 - `autopilot-tickets` owns fresh-state looping, blocker detection, draft promotion, merge gates, and stopping.
 
 Use configured tracker/forge tools. Delegate to the `dispatch-tickets` skill; if unavailable, manually apply its readiness/lifecycle rules and report the fallback.

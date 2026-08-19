@@ -54,7 +54,7 @@ Rules:
 For each selected issue:
 
 1. Resolve `<project-root>` with `git rev-parse --show-toplevel`; choose an issue-id/slug branch with no path separators and a Windows-safe name.
-2. Create its worktree only at `<project-root>/.worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
+2. Create its worktree only at `<project-root>/.claude/worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
 3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
 4. Dispatch one worker per issue with the filled Worker Contract.
 

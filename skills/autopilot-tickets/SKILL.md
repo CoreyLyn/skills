@@ -12,7 +12,6 @@ description: Drain ready-for-agent implementation tickets by dispatching safe ba
 
 Use configured tracker/forge tools. Delegate to the `dispatch-tickets` skill; if unavailable, manually apply its readiness/lifecycle rules and report the fallback.
 Subagent dispatch is delegated to `dispatch-tickets`. If the harness cannot dispatch subagents, stop the loop after reporting the missing capability — do not simulate workers in the parent session unless the user explicitly requests fallback inline work.
-Only accept or create ticket worktrees that match the ledger path `<project-root>/.worktrees/<branch-name>`.
 
 ## Loop
 

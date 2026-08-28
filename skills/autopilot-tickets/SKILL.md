@@ -17,7 +17,7 @@ Subagent dispatch is delegated to `dispatch-tickets`. If the harness cannot disp
 
 Repeat from fresh state:
 
-Explicit invocation authorizes safe in-scope recovery and merge without repeated confirmation.
+Invoking this skill grants standing authorization for the full run to promote and immediately merge every in-scope PR/MR once all Merge Gates pass. Execute the merge without requesting per-PR confirmation. This authorization does not waive Merge Gates or authorize out-of-scope changes.
 Replace unavailable workers, send targeted follow-ups, and repair loop-created changes within the same ticket scope autonomously.
 
 1. Run `git status --short --branch`; fetch, identify the base branch, and resolve the repo root.
@@ -54,7 +54,7 @@ Stop under any condition below; record the blocker rather than dispatching depen
 - Foundational/shared-contract implementation work is blocked/awaiting review, or a failed merge gate blocks dependents.
 - Forge, tracker, git, or subagent tools are unavailable, or failed tests/checks resist safe targeted follow-up.
 - The repo has dirty/conflicting state the loop did not create.
-- User input, repo policy, branch protection, or review requirements need human decision.
+- A new product, scope, security, or policy decision requires human input, or repo protection blocks progress. Routine confirmation of a gate-passing merge is never a human decision or stop condition.
 
 Carry forward the dispatch ledger and add:
 

@@ -16,9 +16,9 @@ Set no skill-level concurrency cap; native capacity limits simultaneous calls on
 Use the configured tracker and forge.
 
 1. Run `git status --short --branch`; resolve the repo root; identify base/current branches, remotes, tracker, and forge.
-2. Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, and relevant docs.
-3. Query every open ticket; read labels, milestones, criteria, links, dependencies, and recent comments.
-4. Classify every open implementation candidate as selected or unselected with a reason. A parent Spec/PRD/map link supplies scope only: its open state is not a dependency. Treat only unfinished implementation-level dependencies and explicit decision/review/policy gates as blockers; treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
+2. Read applicable `AGENTS.md` and `CLAUDE.md` guidance; consult context, README, and other docs only as needed to assess the selected scope.
+3. Query open candidates within the requested scope (default: `ready-for-agent`); read their labels, criteria, dependencies, and recent comments. Follow linked dependencies and blockers as needed to establish readiness.
+4. Classify every implementation candidate in this round as selected or unselected with a reason. A parent Spec/PRD/map link supplies scope only: its open state is not a dependency. Treat only unfinished implementation-level dependencies and explicit decision/review/policy gates as blockers; treat dirty files that overlap expected edits as a dispatch risk unless clearly unrelated.
 
 Dispatch an issue only when all are true:
 
@@ -54,7 +54,7 @@ Rules:
 For each selected issue:
 
 1. Resolve `<project-root>` with `git rev-parse --show-toplevel`; choose an issue-id/slug branch with no path separators and a Windows-safe name.
-2. Create its worktree only at `<project-root>/.claude/worktrees/<branch-name>`; create `.worktrees` if needed and never reuse a non-empty path owned by another task.
+2. Create its worktree only at `<project-root>/.claude/worktrees/<branch-name>`; create `.claude/worktrees` if needed and never reuse a non-empty path owned by another task.
 3. Confirm the worktree starts from the correct base branch and contains no unrelated user changes.
 4. Dispatch one worker per issue with the filled Worker Contract.
 
@@ -69,7 +69,7 @@ Add repo commands, issue links, and acceptance criteria to this fixed contract:
 You are assigned exactly one issue: <issue id and title>.
 Worktree: <absolute path>; branch: <branch>.
 Read the guidance and issue; inspect the tree and code. Change only its acceptance scope and preserve unrelated work. Report NEEDS_CONTEXT or BLOCKED instead of guessing when ambiguous, blocked, or unsafe.
-Implement the assigned issue. Use /tdd where possible, at pre-agreed seams. Run typechecking regularly, single test files regularly, and the full test suite once at the end. Once done, use /code-review to review the work. Commit to the current branch.
+Implement the assigned issue. Run checks relevant to the change and all repo-required checks; run the full suite only when required or warranted by the impact. Invoke the /tdd skill for test-driven development or the /code-review skill for independent review when requested or justified by the task. Review the diff, then commit to the current branch.
 After commit, push the branch and open a draft PR/MR with linked issue, change summary, and verification results. Keep it draft for parent verification.
 Report exactly one status: DONE (complete), DONE_WITH_CONCERNS (complete with risks), NEEDS_CONTEXT (specific information required), or BLOCKED (cannot complete safely).
 Include changed files, verification commands/results, branch, commit SHA if created, draft PR/MR URL if opened, and remaining risks.

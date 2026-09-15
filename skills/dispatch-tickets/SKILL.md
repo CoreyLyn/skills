@@ -50,6 +50,7 @@ Rules:
 - Do not invent tool names. If the harness has no multi-agent/subagent capability, stop and report that instead of faking dispatch.
 - Prefer an explicit model only when the harness supports it; otherwise omit.
 - Record agent id (if returned), issue id, branch, worktree, and expected draft PR/MR.
+- Do not instruct workers to push or open a PR/MR. Parent does those after verifying the local commit.
 
 For each selected issue:
 
@@ -70,16 +71,16 @@ You are assigned exactly one issue: <issue id and title>.
 Worktree: <absolute path>; branch: <branch>.
 Read the guidance and issue; inspect the tree and code. Change only its acceptance scope and preserve unrelated work. Report NEEDS_CONTEXT or BLOCKED instead of guessing when ambiguous, blocked, or unsafe.
 Implement the assigned issue. Run checks relevant to the change and all repo-required checks; run the full suite only when required or warranted by the impact. Invoke the /tdd skill for test-driven development or the /code-review skill for independent review when requested or justified by the task. Review the diff, then commit to the current branch.
-After commit, push the branch and open a draft PR/MR with linked issue, change summary, and verification results. Keep it draft for parent verification.
+Do not push or open a PR/MR. Stop after the local commit.
 Report exactly one status: DONE (complete), DONE_WITH_CONCERNS (complete with risks), NEEDS_CONTEXT (specific information required), or BLOCKED (cannot complete safely).
-Include changed files, verification commands/results, branch, commit SHA if created, draft PR/MR URL if opened, and remaining risks.
+Include changed files, verification commands/results, branch, commit SHA if created, and remaining risks.
 ```
 
 ## Verify And Report
 
 Complete the round only after collecting every agent result and recording parent verification.
 
-Handle statuses mechanically: `DONE`—verify branch, commit, draft URL, scope, tests, and description without moving it to ready; `DONE_WITH_CONCERNS`—inspect concerns and send a targeted follow-up only if the issue can still be completed safely; `NEEDS_CONTEXT`—supply only discoverable missing context or seek human input; `BLOCKED`—record it and withhold dependents.
+Handle statuses mechanically: `DONE`—verify branch, commit, scope, and tests, then parent pushes and opens a draft PR/MR without moving it to ready; `DONE_WITH_CONCERNS`—inspect concerns and send a targeted follow-up only if the issue can still be completed safely; `NEEDS_CONTEXT`—supply only discoverable missing context or seek human input; `BLOCKED`—record it and withhold dependents.
 Verify a draft only when tests and verification pass, scope and required fields match, and no unresolved concerns, merge conflicts, failed checks, or new blocker labels/comments remain.
 
 Ledger: each selected issue's id/title, readiness reason, branch/worktree/agent, status, commit, draft URL and verified/unverified state, verification, and risks; unselected candidates grouped by reason; exact next-round conditions.

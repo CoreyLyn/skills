@@ -1,8 +1,8 @@
 # skills
 
-面向支持 subagent 的 coding agent 的 ticket 编排技能。它们不替代实现技能，而是把已准备好的实现 ticket 组织成可审计的分发、验证和合并流程。
+面向 coding agent 的技能集合，包含 ticket 编排和中文解释。Ticket 编排技能面向支持 subagent 的 agent，把已准备好的实现 ticket 组织成可审计的分发、验证和合并流程。
 
-本仓库支持并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流。它默认项目已经采用 `ready-for-agent`、`/implement`、每个 issue/ticket 一个分支和工作树、draft PR/MR handoff、父代理验证、merge gates 等约束。无 multi-agent/subagent 能力时 skill 应 stop 并报告，不伪造 dispatch。
+本仓库支持并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流。其中 ticket 编排技能默认项目已经采用 `ready-for-agent`、`/implement`、每个 issue/ticket 一个分支和工作树、draft PR/MR handoff、父代理验证、merge gates 等约束。无 multi-agent/subagent 能力时，ticket 编排技能应 stop 并报告，不伪造 dispatch。
 
 ## 安装
 
@@ -39,7 +39,13 @@ npx skills add coreylyn/skills
 
 它复用而不绕过 `dispatch-tickets` 的分发规则。完整循环、合并门控和停止条件见 [`skills/autopilot-tickets/SKILL.md`](skills/autopilot-tickets/SKILL.md)。
 
-## 前置条件
+### `wait-what-zh`
+
+用自然、清晰的中文重新解释上一段回答，补齐背景和推理，沿用项目术语并保留原意。仅显式调用，无需 subagent。
+
+完整提示词见 [`skills/wait-what-zh/SKILL.md`](skills/wait-what-zh/SKILL.md)。
+
+## Ticket 编排技能的前置条件
 
 - 项目有可查询的 tracker，以及可创建 draft PR/MR 的 forge 流程。
 - ticket 有清晰状态、依赖和验收标准，例如 `ready-for-agent`、`needs-info` 或 `blocked`。
@@ -48,7 +54,7 @@ npx skills add coreylyn/skills
 - 项目文档足够 AFK 子代理独立执行，例如 `AGENTS.md`、`CLAUDE.md`、`README.md`、`CONTEXT.md` 或相关 docs。
 - 环境已提供 `implement` Skill。
 
-## 关键安全边界
+## Ticket 编排技能的关键安全边界
 
 - 每个 ticket 一个分支、一个工作树、一个子代理；依赖未完成时不分发后续 ticket。
 - ticket 工作树固定在 `<project-root>/.worktrees/<branch-name>`，不复用其他任务的工作树。

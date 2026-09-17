@@ -1,0 +1,5 @@
+interface:
+  display_name: "Wait What ZH"
+  short_description: "Re-pitch that in clear, natural Chinese"
+policy:
+  allow_implicit_invocation: false

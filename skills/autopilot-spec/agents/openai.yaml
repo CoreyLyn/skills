@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autopilot Spec"
+  short_description: "Implement, verify, and merge a whole spec"
+  default_prompt: "Use $autopilot-spec to implement this spec with implement-spec, verify and review the integration PR/MR, repair defects, and automatically merge once all gates pass."

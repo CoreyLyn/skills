@@ -1,8 +1,8 @@
 # skills
 
-面向 coding agent 的技能集合，包含 ticket 编排和中文解释。Ticket 编排技能面向支持 subagent 的 agent，把已准备好的实现 ticket 组织成可审计的分发、验证和合并流程。
+面向 coding agent 的技能集合，包含整份 spec 从开发到合并的自动流程，以及中文解释。
 
-本仓库支持并延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的 agent 工作流。其中 ticket 编排技能默认项目已经采用 `ready-for-agent`、`/implement`、每个 issue/ticket 一个分支和工作树、draft PR/MR handoff、父代理验证、merge gates 等约束。无 multi-agent/subagent 能力时，ticket 编排技能应 stop 并报告，不伪造 dispatch。
+本仓库延伸 [mattpocock/skills](https://github.com/mattpocock/skills) 的工作流：调用一次 `autopilot-spec`，由它先用 `implement-spec` 开发，再完成验收、审查、修复和自动合并。
 
 ## 安装
 
@@ -14,30 +14,28 @@ npx skills add coreylyn/skills
 
 以下使用 Skill 名称；显式调用语法由 agent runtime 决定。
 
-### `dispatch-tickets`
+### `autopilot-spec`
 
-运行一轮安全分发：
+从一份 spec 及其关联 tickets 开始：
 
-- 刷新仓库、tracker、依赖、文档和工作树状态。
-- 为每个选中的 ticket 创建独立分支、`.worktrees/<branch-name>` 工作树和子代理。
-- 子代理通过 `implement` Skill 完成实现、验证、提交和 draft PR/MR handoff。
-- 父代理等待并验证结果，输出 dispatch ledger。
+1. 调用 `implement-spec` 开发，等待子代理完成并形成集成 PR/MR。
+2. 逐项验收整份 spec，审查整体改动，在原集成分支修复问题并复验。
+3. 验收、审查、检查、审批和仓库合并条件全部通过后自动合并。
+4. 核对 spec/ticket 关闭情况，安全清理工作树并报告结果。
 
-它不合并 PR/MR，也不循环处理队列。Skill 本身没有固定并发上限；实际并发受 runtime 槽位、ticket 依赖和仓库安全状态约束。
+显式调用默认授权该 spec 范围内的开发、修复、提交、推送和条件通过后的合并，无需逐步确认。若要求“只审查，不修改或合并”，则跳过开发，只验收已有成果。需要人工判断的验收项、缺少审批或无法验证的条件会阻止合并。
 
-完整流程与就绪规则见 [`skills/dispatch-tickets/SKILL.md`](skills/dispatch-tickets/SKILL.md)。
+使用示例：
 
-### `autopilot-tickets`
+```text
+使用 autopilot-spec 完成 spec #123，从开发到验收、审查和修复，全部条件通过后自动合并。
 
-运行受控的 ticket-draining loop：
+使用 autopilot-spec 验收 spec #123 和集成 MR !456，只审查，不修改或合并。
+```
 
-- 优先处理当前 loop 或已跟踪 prior round 的 PR/MR。
-- 没有可合并 handoff 时，调用 `dispatch-tickets` 分发下一批安全 ticket。
-- 父代理验证 draft、应用全部 merge gate，只合并安全的 agent-created PR/MR。
-- 每次合并后刷新 tracker、依赖和 blocker 状态。
-- 队列清空或安全条件要求停止时，结束并报告。
+需要已安装的 `implement-spec` 及其所需能力、spec 和关联 tickets、项目验证环境，以及 tracker/forge 权限。续跑时复用已有集成成果；实现已完成则直接验收。开发编排交给 `implement-spec`，本 skill 只衔接验收和合并，不维护另一套 ticket 调度规则。
 
-它复用而不绕过 `dispatch-tickets` 的分发规则。完整循环、合并门控和停止条件见 [`skills/autopilot-tickets/SKILL.md`](skills/autopilot-tickets/SKILL.md)。
+完整验收、合并条件和停止规则见 [`skills/autopilot-spec/SKILL.md`](skills/autopilot-spec/SKILL.md)。
 
 ### `wait-what-zh`
 
@@ -45,22 +43,11 @@ npx skills add coreylyn/skills
 
 完整提示词见 [`skills/wait-what-zh/SKILL.md`](skills/wait-what-zh/SKILL.md)。
 
-## Ticket 编排技能的前置条件
+## 从旧版迁移
 
-- 项目有可查询的 tracker，以及可创建 draft PR/MR 的 forge 流程。
-- ticket 有清晰状态、依赖和验收标准，例如 `ready-for-agent`、`needs-info` 或 `blocked`。
-- 单个实现 ticket 能隔离到独立分支和工作树。
-- agent runtime 提供原生子代理能力（各 harness 工具名不同；skill 用平台中立 `Subagent` 动作描述，由模型映射到真实工具）。
-- 项目文档足够 AFK 子代理独立执行，例如 `AGENTS.md`、`CLAUDE.md`、`README.md`、`CONTEXT.md` 或相关 docs。
-- 环境已提供 `implement` Skill。
+`autopilot-spec` 替代了本仓库的 `autopilot-tickets` 和 `dispatch-tickets`。入口改为整份 spec，原来的 ticket 队列分发和逐 ticket 合并流程已移除。
 
-## Ticket 编排技能的关键安全边界
-
-- 每个 ticket 一个分支、一个工作树、一个子代理；依赖未完成时不分发后续 ticket。
-- ticket 工作树固定在 `<project-root>/.worktrees/<branch-name>`，不复用其他任务的工作树。
-- 子代理报告不是完成证明；父代理必须核对提交、diff 范围、测试和 handoff。
-- autopilot 只处理可追溯到 dispatch ledger 的 PR/MR，并遵守仓库既有 merge 方法、检查和保护规则。
-- 出现歧义、人工决策、新 blocker、冲突、失败检查或未授权高风险变更时停止，而不是绕过 gate。
+更新安装时，请核对所用 agent 的已安装技能列表，移除旧的两个 skill 副本，避免仍触发旧流程。修改本仓库不会自动同步已有安装副本。
 
 ## 许可证
 
